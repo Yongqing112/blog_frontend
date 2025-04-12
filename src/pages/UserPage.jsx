@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Navbar, Nav, Button, Form, ListGroup, Alert } from 'react-bootstrap';
+import NavbarComponent from './NavbarComponent';
 
 import '../Button.css';
 
@@ -50,18 +51,7 @@ export default function UserPage() {
 
     return (
         <>
-            <Navbar bg="light" expand="lg" className="px-5 justify-content-between">
-                <Navbar.Brand as={Link} to="/" style={{ fontWeight: 'bold', fontSize: '20px' }}>
-                    Blog
-                </Navbar.Brand>
-
-                <Nav className="d-flex gap-3">
-                    <Button className="no-style-button">Notification</Button>
-                    <Button className="no-style-button" onClick={() => navigate('/post')}>Post</Button>
-                    <Button className="no-style-button">Bookmark</Button>
-                    <Button variant="dark" disabled>Hi {username}</Button>
-                </Nav>
-            </Navbar>
+            <NavbarComponent username={username} />
 
             <Container className="mt-5">
                 <Row>
@@ -70,16 +60,20 @@ export default function UserPage() {
                         <h6 className="text-muted mb-4">bheading for description or instructions</h6>
 
                         {articles.length > 0 ? (
-                           <ListGroup>
-                           {articles.map(article => (
-                             <ListGroup.Item key={article.id} className="mb-3 border-0">
-                               <h5 className="fw-bold">{article.title}</h5>
-                               <p className="text-muted">
-                                 {article.content.split('\n')[0]}
-                               </p>
-                             </ListGroup.Item>
-                           ))}
-                         </ListGroup>
+                            <ListGroup>
+                                {articles.map(article => (
+                                    <ListGroup.Item key={article.id} className="mb-3 border-0">
+                                        <h5 className="fw-bold">
+                                            <Link to={`/article/${article.articleId}`} style={{ textDecoration: 'none', color: 'black' }}>
+                                                {article.title}
+                                            </Link>
+                                        </h5>
+                                        <p className="text-muted">
+                                            {article.content.split('\n')[0]}
+                                        </p>
+                                    </ListGroup.Item>
+                                ))}
+                            </ListGroup>
                         ) : (
                             <p>尚未發表任何文章</p>
                         )}
