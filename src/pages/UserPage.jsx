@@ -43,7 +43,6 @@ export default function UserPage() {
         setMessage('更新成功！');
         setOldPassword('');
         setNewPassword('');
-        // 更新 context 的 user.username
         setUser({ ...user, username: user.username });
       })
       .catch(err => {

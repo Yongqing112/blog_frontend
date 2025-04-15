@@ -5,14 +5,12 @@ import { Container, ListGroup } from 'react-bootstrap';
 import NavbarComponent from '../NavbarComponent';
 
 export default function Home() {
-  const [user, setUser] = useState(null);
   const [articles, setArticles] = useState([]);
   const navigate = useNavigate();
   const formatDate = (isoString) => new Date(isoString).toLocaleDateString('zh-TW');
 
   useEffect(() => {
 
-    // 取得文章列表
     axios.get('http://localhost:8080/article/all')
     .then(res => {
       setArticles(res.data);

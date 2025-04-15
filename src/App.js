@@ -29,7 +29,7 @@ function AppRouter() {
       <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/user" element={user ? <UserPage /> : <Navigate to="/login" />} />
-      <Route path="/post" element={user ? <PostPage /> : <Navigate to="/login" />} />
+      <Route path="/post" element={<PostPage />} />
       <Route path="/article/:articleId" element={<ArticlePage />} />
       <Route path="/devtool" element={<DevTool />} />
     </Routes>

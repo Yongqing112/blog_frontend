@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Container, Form, Button, Alert, Navbar, Nav } from 'react-bootstrap';
+import { Container, Form, Button, Alert, Navbar, Nav, Modal } from 'react-bootstrap';
+import { useAuth } from '../AuthContext';
 
 export default function PostPage() {
   const [title, setTitle] = useState('');
@@ -9,16 +10,33 @@ export default function PostPage() {
   const [tag, setTag] = useState('');
   const [category, setCategory] = useState('');
   const [message, setMessage] = useState('');
+  const [showModal, setShowModal] = useState(false);
+
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      setShowModal(true);
+    }
+  }, [user]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setMessage('');
 
-    const userId = localStorage.getItem('userId');
-    const articleId = new Date();
+    const articleId = new Date().toISOString();
     const date = new Date().toISOString();
-    axios.post('http://localhost:8080/article/', { articleId, userId, title, content, tag, category, date }, { withCredentials: true })
+
+    axios.post('http://localhost:8080/article/', {
+      articleId,
+      userId: user.userId,
+      title,
+      content,
+      tag,
+      category,
+      date
+    }, { withCredentials: true })
       .then(() => {
         setMessage('文章發表成功！');
         setTimeout(() => navigate('/user'), 1500);
@@ -26,7 +44,7 @@ export default function PostPage() {
       .catch(() => {
         setMessage('發表失敗，請再試一次');
       });
-  }
+  };
 
   return (
     <>
@@ -84,13 +102,25 @@ export default function PostPage() {
             />
           </Form.Group>
 
-          <div className="d-flex justify-content-end">
-            <Button variant="dark" type="submit">Save</Button>
-          </div>
-
+          <Button variant="dark" type="submit">Save</Button>
           {message && <Alert variant="info" className="mt-3 text-center">{message}</Alert>}
         </Form>
       </Container>
+
+      <Modal show={showModal} onHide={() => navigate(-1)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>尚未登入</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>請先登入才能發文，是否前往登入頁？</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => navigate(-1)}>
+            取消
+          </Button>
+          <Button variant="primary" onClick={() => navigate('/login')}>
+            確定
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 }
