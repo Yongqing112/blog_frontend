@@ -7,6 +7,7 @@ import PostPage from './pages/PostPage';
 import Register from './pages/Register';
 import ArticlePage from './pages/ArticlePage';
 import DevTool from './DevTool';
+import BookmarkPage from './pages/BookmarkPage';
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ function AppRouter() {
       <Route path="/register" element={<Register />} />
       <Route path="/user" element={user ? <UserPage /> : <Navigate to="/login" />} />
       <Route path="/post" element={<PostPage />} />
+      <Route path="/bookmark" element={<BookmarkPage />} />
       <Route path="/article/:articleId" element={<ArticlePage />} />
       <Route path="/devtool" element={<DevTool />} />
     </Routes>

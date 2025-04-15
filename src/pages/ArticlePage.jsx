@@ -8,12 +8,15 @@ import { useAuth } from '../AuthContext';
 export default function ArticlePage() {
   const { articleId } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [article, setArticle] = useState({});
   const [author, setAuthor] = useState(null);
   const [error, setError] = useState(null);
   const [comment, setComment] = useState('');
   const [commentMsg, setCommentMsg] = useState('');
-  const navigate = useNavigate();
+  const [bookmarkMsg, setBookmarkMsg] = useState('');
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   useEffect(() => {
     axios.get(`http://localhost:8080/article/${articleId}`)
@@ -38,6 +41,19 @@ export default function ArticlePage() {
       });
   }, [article.userId]);
 
+  useEffect(() => {
+    if (!user || !articleId) return;
+    axios.get(`http://localhost:8080/article/bookmark/${user.userId}`, { withCredentials: true })
+      .then(res => {
+        const bookmarkedIds = res.data;
+        setIsBookmarked(bookmarkedIds.includes(articleId));
+      })
+      .catch(err => {
+        console.error('取得收藏資訊失敗', err);
+        setIsBookmarked(false);
+      });
+  }, [user, articleId]);
+
   const formatDate = (isoString) => new Date(isoString).toLocaleString('zh-TW');
 
   const handleCommentSubmit = async (e) => {
@@ -56,14 +72,43 @@ export default function ArticlePage() {
 
     try {
       await axios.post(`http://localhost:8080/feedback/${user.userId}/${articleId}/comment-edited`, comment, {
-        headers: { 'Content-Type': 'text/plain' }
+        headers: { 'Content-Type': 'text/plain' },
+        withCredentials: true
       });
 
       setCommentMsg('留言成功！');
       setComment('');
     } catch (err) {
       console.error('留言失敗', err);
-      setCommentMsg('留言失敗，請再試一次');
+      setCommentMsg('留言失敗，請稍後再試');
+    }
+  };
+
+  const toggleBookmark = async () => {
+    setBookmarkMsg('');
+
+    if (!user) {
+      setBookmarkMsg('請先登入才能操作收藏');
+      return;
+    }
+
+    try {
+      if (isBookmarked) {
+        await axios.delete(`http://localhost:8080/article/bookmark/${user.userId}/${articleId}`, {
+          withCredentials: true
+        });
+        setBookmarkMsg('已取消收藏');
+        setIsBookmarked(false);
+      } else {
+        await axios.put(`http://localhost:8080/article/bookmark/${user.userId}/${articleId}`, null, {
+          withCredentials: true
+        });
+        setBookmarkMsg('收藏成功！');
+        setIsBookmarked(true);
+      }
+    } catch (err) {
+      console.error('收藏操作失敗', err);
+      setBookmarkMsg('操作失敗，請稍後再試');
     }
   };
 
@@ -76,7 +121,6 @@ export default function ArticlePage() {
         <Button variant="link" onClick={() => navigate(-1)}>← 返回上一頁</Button>
 
         <Card className="p-4 shadow-sm">
-          {/* 作者＋時間 */}
           <div className="d-flex justify-content-between mb-2">
             <span className="fw-bold">{author ? author.username : article.userId}</span>
             <span className="text-muted" style={{ fontSize: '0.9rem' }}>
@@ -84,21 +128,25 @@ export default function ArticlePage() {
             </span>
           </div>
 
-          {/* 內容 */}
           <Card.Text style={{ whiteSpace: 'pre-wrap' }}>
             {article.content}
           </Card.Text>
 
-          {/* 標籤 & 分類 */}
           <div className="mt-3 d-flex flex-wrap gap-2">
             {article.tag && article.tag.split(',').map((item, idx) => (
               <Badge bg="secondary" key={idx}>#{item.trim()}</Badge>
             ))}
             <Badge bg="info">分類：{article.category}</Badge>
           </div>
+
+          <div className="mt-4">
+            <Button variant={isBookmarked ? 'success' : 'outline-warning'} onClick={toggleBookmark}>
+              {isBookmarked ? '✅ 已收藏' : '加入收藏'}
+            </Button>
+            {bookmarkMsg && <Alert variant="info" className="mt-2">{bookmarkMsg}</Alert>}
+          </div>
         </Card>
 
-        {/* 留言區 */}
         <Card className="mt-4 p-4">
           <h5>留言區</h5>
           <Form onSubmit={handleCommentSubmit}>
