@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Container, ListGroup, Alert, Button } from 'react-bootstrap';
+import { Container, ListGroup, Alert, Button, Row, Col } from 'react-bootstrap';
 import NavbarComponent from '../NavbarComponent';
 import { useAuth } from '../AuthContext';
 
@@ -40,6 +40,19 @@ export default function BookmarkPage() {
       });
   }, [user]);
 
+  const handleRemoveBookmark = async (articleId) => {
+    try {
+      await axios.delete(`http://localhost:8080/article/bookmark/${user.userId}/${articleId}`, {
+        withCredentials: true,
+      });
+
+      setArticles(prev => prev.filter(article => article.articleId !== articleId));
+    } catch (err) {
+      console.error('取消收藏失敗', err);
+      alert('取消收藏失敗，請稍後再試');
+    }
+  };
+
   return (
     <>
       <NavbarComponent />
@@ -52,11 +65,18 @@ export default function BookmarkPage() {
 
         <ListGroup className="mt-3">
           {articles.map(article => (
-            <ListGroup.Item key={article.articleId} action onClick={() => navigate(`/article/${article.articleId}`)}>
-              <strong>{article.title}</strong><br />
-              <small className="text-muted">
-                發布日期：{formatDate(article.date)}
-              </small>
+            <ListGroup.Item key={article.articleId} className="d-flex justify-content-between align-items-center">
+              <div onClick={() => navigate(`/article/${article.articleId}`)} style={{ cursor: 'pointer' }}>
+                <strong>{article.title}</strong><br />
+                <small className="text-muted">發布日期：{formatDate(article.date)}</small>
+              </div>
+              <Button
+                variant="outline-danger"
+                size="sm"
+                onClick={() => handleRemoveBookmark(article.articleId)}
+              >
+                取消收藏
+              </Button>
             </ListGroup.Item>
           ))}
         </ListGroup>
