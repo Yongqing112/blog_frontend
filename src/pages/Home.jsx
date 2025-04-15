@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Container, Button, Navbar, Nav, ListGroup } from 'react-bootstrap';
+import { Container, ListGroup } from 'react-bootstrap';
 import NavbarComponent from '../NavbarComponent';
 
 export default function Home() {
@@ -11,14 +11,6 @@ export default function Home() {
   const formatDate = (isoString) => new Date(isoString).toLocaleDateString('zh-TW');
 
   useEffect(() => {
-    axios.get('http://localhost:8080/users/profile', { withCredentials: true })
-      .then(res => {
-        setUser(res.data);
-        localStorage.setItem('userId', res.data.userId);
-      })
-      .catch(() => {
-        setUser(null);
-      });
 
     // 取得文章列表
     axios.get('http://localhost:8080/article/all')
@@ -30,19 +22,10 @@ export default function Home() {
     });
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await axios.post('http://localhost:8080/users/logout', null, { withCredentials: true });
-      window.location.href = '/login';
-    } catch {
-      alert('登出失敗');
-    }
-  };
-
   return (
     <>
     
-      <NavbarComponent username={user?.username} />
+      <NavbarComponent />
 
       <Container className="mt-5 text-center">
         <h1>歡迎來到 Blog 主畫面！</h1>
