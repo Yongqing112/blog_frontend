@@ -7,6 +7,7 @@ import Register from './pages/Register';
 import ArticlePage from './pages/ArticlePage';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import DevTool from './DevTool';
 
 export default function App() {
   const [isLogin, setIsLogin] = useState(false);
@@ -47,6 +48,8 @@ export default function App() {
         <Route path="/user" element={isLogin ? <UserPage /> : <Navigate to="/login" />} />
         <Route path="/post" element={isLogin ? <PostPage /> : <Navigate to="/login" />} />
         <Route path="/article/:articleId" element={<ArticlePage />} />
+
+        <Route path='/devtool' element={<DevTool />}/>
       </Routes>
     </BrowserRouter>
   );

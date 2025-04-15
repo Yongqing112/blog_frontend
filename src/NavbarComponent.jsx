@@ -11,10 +11,10 @@ export default function NavbarComponent({ username }) {
                 </Navbar.Brand>
 
                 <Nav className="d-flex gap-3">
-                    <Button className="no-style-button">Notification</Button>
-                    <Button className="no-style-button" onClick={() => navigate('/post')}>Post</Button>
-                    <Button className="no-style-button">Bookmark</Button>
-                    <Button variant="dark" disabled>Hi {username}</Button>
+                    <Button variant='outline-primary' className="no-style-button">Notification</Button>
+                    <Button variant='outline-primary' className="no-style-button" onClick={() => navigate('/post')}>Post</Button>
+                    <Button variant='outline-primary' className="no-style-button">Bookmark</Button>
+                    <Button variant="outline-danger" disabled>Hi {username}</Button>
                 </Nav>
             </Navbar>
   );

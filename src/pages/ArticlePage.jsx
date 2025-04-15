@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Container, Row, Col, Navbar, Nav, Button, Form, ListGroup, Alert } from 'react-bootstrap';
-import NavbarComponent from './NavbarComponent';
+import { Container, Button, Alert } from 'react-bootstrap';
+import NavbarComponent from '../NavbarComponent';
 
 export default function ArticlePage() {
     const { articleId } = useParams();
@@ -32,7 +32,7 @@ export default function ArticlePage() {
       };
     
       fetchData();
-    }, [articleId, navigate]);
+    }, [articleId]);
 
     return (
         <>

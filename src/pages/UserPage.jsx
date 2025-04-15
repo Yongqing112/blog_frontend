@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Navbar, Nav, Button, Form, ListGroup, Alert } from 'react-bootstrap';
-import NavbarComponent from './NavbarComponent';
+import NavbarComponent from '../NavbarComponent';
 
 import '../Button.css';
 
