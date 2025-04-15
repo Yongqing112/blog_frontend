@@ -10,7 +10,7 @@ import '../Button.css';
 export default function UserPage() {
   const { user, setUser } = useAuth();
   const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [password, setNewPassword] = useState('');
   const [articles, setArticles] = useState([]);
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
@@ -21,23 +21,17 @@ export default function UserPage() {
       return;
     }
 
-    axios.get(`http://localhost:8080/article/user/${user.userId}`, { withCredentials: true })
-      .then(res => {
-        setArticles(res.data);
-      })
-      .catch(err => {
-        console.error('取得文章失敗', err);
-      });
+    fetchArticles();
   }, [user, navigate]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setMessage('');
 
-    axios.post('http://localhost:8080/users/update', {
+    axios.put('http://localhost:8080/users/update', {
       username: user.username,
       oldPassword,
-      newPassword
+      password
     }, { withCredentials: true })
       .then(() => {
         setMessage('更新成功！');
@@ -49,6 +43,44 @@ export default function UserPage() {
         setMessage(err.response?.data?.error || '更新失敗');
       });
   }
+
+  const handleDelete = async (articleId) => {
+  try {
+    await axios.delete(`http://localhost:8080/article/${user.userId}/${articleId}`, {
+      withCredentials: true
+    });
+    fetchArticles();
+  } catch (err) {
+    console.error('刪除失敗', err);
+    alert('刪除失敗');
+  }
+};
+
+const fetchArticles = () => {
+  axios.get(`http://localhost:8080/article/user/${user.userId}`, {
+    withCredentials: true
+  }).then(res => {
+    const visibleArticles = res.data
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+    setArticles(visibleArticles);
+  }).catch(() => {
+    setArticles([]);
+  });
+};
+
+  
+  const handleRecover = async (articleId) => {
+    try {
+      await axios.put(`http://localhost:8080/article/${user.userId}/${articleId}`, null, {
+        withCredentials: true
+      });
+      fetchArticles();
+    } catch (err) {
+      console.error('回復失敗', err);
+      alert('回復失敗');
+    }
+  };
+  
 
   return (
     <>
@@ -63,15 +95,37 @@ export default function UserPage() {
             {articles.length > 0 ? (
               <ListGroup>
                 {articles.map(article => (
-                  <ListGroup.Item key={article.id} className="mb-3 border-0">
-                    <h5 className="fw-bold">
-                      <Link to={`/article/${article.articleId}`} style={{ textDecoration: 'none', color: 'black' }}>
-                        {article.title}
-                      </Link>
-                    </h5>
-                    <p className="text-muted">
-                      {article.content.split('\n')[0]}
-                    </p>
+                  <ListGroup.Item key={article.articleId} className="mb-3 border-0">
+                    <div className="d-flex justify-content-between align-items-start">
+                      <div>
+                        <h5 className="fw-bold">
+                          <Link to={`/article/${article.articleId}`} style={{ textDecoration: 'none', color: 'black' }}>
+                            {article.title}
+                          </Link>
+                        </h5>
+                        <p className="text-muted">{article.content.split('\n')[0]}</p>
+                      </div>
+
+                      <div className="d-flex flex-column align-items-end ms-3">
+                        {!article.deleted ? (
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => handleDelete(article.articleId)}
+                          >
+                            刪除
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline-success"
+                            size="sm"
+                            onClick={() => handleRecover(article.articleId)}
+                          >
+                            回復
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </ListGroup.Item>
                 ))}
               </ListGroup>
@@ -114,7 +168,7 @@ export default function UserPage() {
                 <Form.Label>New Password</Form.Label>
                 <Form.Control
                   type="password"
-                  value={newPassword}
+                  value={password}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
               </Form.Group>

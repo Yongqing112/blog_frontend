@@ -13,7 +13,10 @@ export default function Home() {
 
     axios.get('http://localhost:8080/article/all')
       .then(res => {
-        const sortedArticles = res.data.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const sortedArticles = 
+        res.data
+        .filter(article => !article.isDeleted)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
         setArticles(sortedArticles);
       })
       .catch(err => {
