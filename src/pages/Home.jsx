@@ -12,21 +12,22 @@ export default function Home() {
   useEffect(() => {
 
     axios.get('http://localhost:8080/article/all')
-    .then(res => {
-      setArticles(res.data);
-    })
-    .catch(err => {
-      console.error('取得文章失敗', err);
-    });
+      .then(res => {
+        const sortedArticles = res.data.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setArticles(sortedArticles);
+      })
+      .catch(err => {
+        console.error('取得文章失敗', err);
+      });
   }, []);
 
   return (
     <>
-    
+
       <NavbarComponent />
 
       <Container className="mt-5 text-center">
-        <h1>歡迎來到 Blog 主畫面！</h1>
+        <h1>歡迎來到 Blog !！</h1>
       </Container>
 
       <Container className="mt-4">
