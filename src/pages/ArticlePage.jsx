@@ -14,6 +14,7 @@ export default function ArticlePage() {
   const [author, setAuthor] = useState(null);
   const [error, setError] = useState(null);
   const [comment, setComment] = useState('');
+  const [comments, setComments] = useState([]);
   const [commentMsg, setCommentMsg] = useState('');
   const [bookmarkMsg, setBookmarkMsg] = useState('');
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -53,6 +54,31 @@ export default function ArticlePage() {
         setIsBookmarked(false);
       });
   }, [user, articleId]);
+
+  useEffect(() => {
+    if (!articleId) return;
+
+    axios.get(`http://localhost:8080/feedback/${articleId}/comments`)
+      .then(async (res) => {
+        const commentsRaw = res.data;
+
+        const commentsWithUsernames = await Promise.all(
+          commentsRaw.map(async (comment) => {
+            try {
+              const userRes = await axios.get(`http://localhost:8080/users/${comment.userId}`);
+              return { ...comment, username: userRes.data.username };
+            } catch (err) {
+              return { ...comment, username: '未知用戶' };
+            }
+          }).sort((a, b) => new Date(a.date) - new Date(b.date))
+        );
+
+        setComments(commentsWithUsernames);
+      })
+      .catch(err => {
+        console.error("留言載入失敗", err);
+      });
+  }, [articleId, commentMsg]);
 
   const formatDate = (isoString) => new Date(isoString).toLocaleString('zh-TW');
 
@@ -149,6 +175,22 @@ export default function ArticlePage() {
 
         <Card className="mt-4 p-4">
           <h5>留言區</h5>
+
+          <div className="mt-4">
+            {comments.length > 0 ? (
+              comments.map((cmt, idx) => (
+                <Card key={idx} className="mb-2 p-2">
+                  <div className="fw-bold">{cmt.username}</div>
+                  <div style={{ whiteSpace: 'pre-wrap' }}>{cmt.content}</div>
+                  <div className="text-muted" style={{ fontSize: '0.8rem' }}>
+                    {new Date(cmt.date).toLocaleString('zh-TW')}
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <p className="text-muted">目前還沒有留言</p>
+            )}
+          </div>
           <Form onSubmit={handleCommentSubmit}>
             <Form.Control
               as="textarea"
