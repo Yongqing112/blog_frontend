@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import ArticlePage from './pages/ArticlePage';
 import DevTool from './DevTool';
 import BookmarkPage from './pages/BookmarkPage';
+import NotificationPage from "./pages/NotificationPage";
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ function AppRouter() {
       <Route path="/post" element={<PostPage />} />
       <Route path="/bookmark" element={<BookmarkPage />} />
       <Route path="/article/:articleId" element={<ArticlePage />} />
+      <Route path="/notification" element={<NotificationPage />} />
       <Route path="/devtool" element={<DevTool />} />
     </Routes>
   );

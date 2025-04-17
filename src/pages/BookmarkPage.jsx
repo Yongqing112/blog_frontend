@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Container, ListGroup, Alert, Button, Row, Col } from 'react-bootstrap';
+import {Container, ListGroup, Alert, Button} from 'react-bootstrap';
 import NavbarComponent from '../NavbarComponent';
 import { useAuth } from '../AuthContext';
+import AuthRequiredModal from './AuthRequiredModal';
 
 export default function BookmarkPage() {
   const { user } = useAuth();
   const [articles, setArticles] = useState([]);
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
 
   const formatDate = (isoString) => new Date(isoString).toLocaleDateString('zh-TW');
 
   useEffect(() => {
     if (!user) {
-      setMessage('請先登入才能查看收藏文章');
-      return;
+        setShowModal(true);
+       return;
     }
 
     axios.get(`http://localhost:8080/article/bookmark/${user.userId}`, { withCredentials: true })
@@ -83,6 +85,7 @@ export default function BookmarkPage() {
 
         <Button className="mt-4" onClick={() => navigate(-1)}>← 返回上一頁</Button>
       </Container>
+      <AuthRequiredModal show={showModal} message="請先登入才能收藏文章，是否前往登入頁？"/>
     </>
   );
 }

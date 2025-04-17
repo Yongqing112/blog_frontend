@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Container, Form, Button, Alert, Navbar, Nav, Modal } from 'react-bootstrap';
 import { useAuth } from '../AuthContext';
+import AuthRequiredModal from './AuthRequiredModal';
 
 export default function PostPage() {
   const [title, setTitle] = useState('');
@@ -106,21 +107,7 @@ export default function PostPage() {
           {message && <Alert variant="info" className="mt-3 text-center">{message}</Alert>}
         </Form>
       </Container>
-
-      <Modal show={showModal} onHide={() => navigate(-1)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>尚未登入</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>請先登入才能發文，是否前往登入頁？</Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => navigate(-1)}>
-            取消
-          </Button>
-          <Button variant="primary" onClick={() => navigate('/login')}>
-            確定
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <AuthRequiredModal show={showModal} message="請先登入才能發表文章，是否前往登入頁？"/>
     </>
   );
 }
