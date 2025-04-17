@@ -7,7 +7,30 @@ import NavbarComponent from '../NavbarComponent';
 export default function Home() {
   const [articles, setArticles] = useState([]);
   const navigate = useNavigate();
-  const formatDate = (isoString) => new Date(isoString).toLocaleDateString('zh-TW');
+  
+  const timeAgo = (isoString) => {
+    const now = new Date();
+    const past = new Date(isoString);
+    const seconds = Math.floor((now - past) / 1000);
+  
+    const intervals = [
+      { label: '年', seconds: 31536000 },
+      { label: '個月', seconds: 2592000 },
+      { label: '天', seconds: 86400 },
+      { label: '小時', seconds: 3600 },
+      { label: '分鐘', seconds: 60 },
+      { label: '秒', seconds: 1 },
+    ];
+  
+    for (const interval of intervals) {
+      const count = Math.floor(seconds / interval.seconds);
+      if (count >= 1) {
+        return `${count} ${interval.label}前`;
+      }
+    }
+  
+    return '剛剛';
+  };
 
   useEffect(() => {
 
@@ -40,8 +63,9 @@ export default function Home() {
             articles.map(article => (
               <ListGroup.Item key={article.id} action onClick={() => navigate(`/article/${article.articleId}`)}>
                 <strong>{article.title}</strong><br />
+                <p className="text-muted">{article.content.split('\n')[0]}</p>
                 <small className="text-muted">
-                  發布日期：{formatDate(article.date)}
+                {timeAgo(article.date)}
                 </small>
               </ListGroup.Item>
             ))

@@ -13,6 +13,8 @@ export default function UserPage() {
   const [password, setNewPassword] = useState('');
   const [articles, setArticles] = useState([]);
   const [message, setMessage] = useState('');
+  const [showDeleted, setShowDeleted] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,7 +24,7 @@ export default function UserPage() {
     }
 
     fetchArticles();
-  }, [user, navigate]);
+  }, [user, navigate, showDeleted]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -45,30 +47,35 @@ export default function UserPage() {
   }
 
   const handleDelete = async (articleId) => {
-  try {
-    await axios.delete(`http://localhost:8080/article/${user.userId}/${articleId}`, {
+    try {
+      await axios.delete(`http://localhost:8080/article/${user.userId}/${articleId}`, {
+        withCredentials: true
+      });
+      fetchArticles();
+    } catch (err) {
+      console.error('刪除失敗', err);
+      alert('刪除失敗');
+    }
+  };
+
+  const fetchArticles = () => {
+    const url = showDeleted
+      ? `http://localhost:8080/article/all/deleted/${user.userId}`
+      : `http://localhost:8080/article/user/${user.userId}`;
+
+    axios.get(url, {
       withCredentials: true
+    }).then(res => {
+      const visibleArticles = res.data
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+      setArticles(visibleArticles);
+    }).catch(() => {
+      setArticles([]);
     });
-    fetchArticles();
-  } catch (err) {
-    console.error('刪除失敗', err);
-    alert('刪除失敗');
-  }
-};
+  };
 
-const fetchArticles = () => {
-  axios.get(`http://localhost:8080/article/user/${user.userId}`, {
-    withCredentials: true
-  }).then(res => {
-    const visibleArticles = res.data
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-    setArticles(visibleArticles);
-  }).catch(() => {
-    setArticles([]);
-  });
-};
 
-  
+
   const handleRecover = async (articleId) => {
     try {
       await axios.put(`http://localhost:8080/article/${user.userId}/${articleId}`, null, {
@@ -80,7 +87,7 @@ const fetchArticles = () => {
       alert('回復失敗');
     }
   };
-  
+
 
   return (
     <>
@@ -92,6 +99,17 @@ const fetchArticles = () => {
             <h1 className="fw-bold mb-2">{user?.username}</h1>
             <h6 className="text-muted mb-4">bheading for description or instructions</h6>
 
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h4 className="fw-bold">你的文章</h4>
+              <Form.Select
+                value={showDeleted ? 'deleted' : 'active'}
+                onChange={(e) => setShowDeleted(e.target.value === 'deleted')}
+                style={{ width: '200px' }}
+              >
+                <option value="active">顯示未刪除</option>
+                <option value="deleted">顯示已刪除</option>
+              </Form.Select>
+            </div>
             {articles.length > 0 ? (
               <ListGroup>
                 {articles.map(article => (
@@ -107,7 +125,7 @@ const fetchArticles = () => {
                       </div>
 
                       <div className="d-flex flex-column align-items-end ms-3">
-                        {!article.deleted ? (
+                        {!showDeleted ? (
                           <Button
                             variant="outline-danger"
                             size="sm"
