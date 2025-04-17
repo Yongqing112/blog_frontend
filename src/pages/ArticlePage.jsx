@@ -138,6 +138,23 @@ export default function ArticlePage() {
     }
   };
 
+  const addReaction = async (writerId, targetId, type) => {
+    if (!user) {
+      alert("請先登入才能反應");
+      return;
+    }
+
+    try {
+      await axios.post(`http://localhost:8080/feedback/${writerId}/${targetId}/${user.userId}/add-reaction`, type, {
+        headers: { 'Content-Type': 'text/plain' },
+        withCredentials: true,
+      });
+    } catch (err) {
+      console.error('Reaction 送出失敗', err);
+      alert('送出失敗，請稍後再試');
+    }
+  };
+
   return (
     <>
       <NavbarComponent />
@@ -171,6 +188,11 @@ export default function ArticlePage() {
             </Button>
             {bookmarkMsg && <Alert variant="info" className="mt-2">{bookmarkMsg}</Alert>}
           </div>
+
+          <div className="mt-3">
+            <Button variant="outline-success" size="sm" onClick={() => addReaction(article.userId, articleId, 'up')}>👍</Button>{' '}
+            <Button variant="outline-danger" size="sm" onClick={() => addReaction(article.userId, articleId, 'down')}>👎</Button>
+          </div>
         </Card>
 
         <Card className="mt-4 p-4">
@@ -180,8 +202,29 @@ export default function ArticlePage() {
             {comments.length > 0 ? (
               comments.map((cmt, idx) => (
                 <Card key={idx} className="mb-2 p-2">
-                  <div className="fw-bold">{cmt.username}</div>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div className="fw-bold">{cmt.username}</div>
+                    <div className="text-muted" style={{ fontSize: '0.8rem' }}>
+                      B{idx + 1}
+                    </div>
+                  </div>
                   <div style={{ whiteSpace: 'pre-wrap' }}>{cmt.content}</div>
+                  <div className="mt-2">
+                    <Button
+                      variant="outline-success"
+                      size="sm"
+                      onClick={() => addReaction(cmt.userId, articleId, 'up')}
+                    >
+                      👍
+                    </Button>{' '}
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => addReaction(cmt.userId, articleId, 'down')}
+                    >
+                      👎
+                    </Button>
+                  </div>
                   <div className="text-muted" style={{ fontSize: '0.8rem' }}>
                     {new Date(cmt.date).toLocaleString('zh-TW')}
                   </div>
@@ -191,6 +234,7 @@ export default function ArticlePage() {
               <p className="text-muted">目前還沒有留言</p>
             )}
           </div>
+
           <Form onSubmit={handleCommentSubmit}>
             <Form.Control
               as="textarea"
