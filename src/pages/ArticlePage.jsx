@@ -97,7 +97,7 @@ export default function ArticlePage() {
     }
 
     try {
-      await axios.post(`http://localhost:8080/feedback/${user.userId}/${articleId}/comment-edited`, comment, {
+      await axios.post(`http://localhost:8080/feedback/${user.userId}/${articleId}/${article.userId}/comment-edited`, comment, {
         headers: { 'Content-Type': 'text/plain' },
         withCredentials: true
       });
