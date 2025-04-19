@@ -22,12 +22,13 @@ export default function ArticlePage() {
   const [isUp, setIsUp] = useState(false);
   const [isDown, setIsDown] = useState(false);
   const [articleReactionId, setArticleReactionId] = useState(null);
+  const [reactionRefreshKey, setReactionRefreshKey] = useState(0);
+
+  const userId = user?.userId;
 
   useEffect(() => {
     axios.get(`http://localhost:8080/article/${articleId}`)
-      .then(res => {
-        setArticle(res.data);
-      })
+      .then(res => setArticle(res.data))
       .catch(err => {
         console.error("文章載入失敗", err);
         setError('找不到這篇文章');
@@ -37,9 +38,7 @@ export default function ArticlePage() {
   useEffect(() => {
     if (!article.userId) return;
     axios.get(`http://localhost:8080/users/${article.userId}`)
-      .then(res => {
-        setAuthor(res.data);
-      })
+      .then(res => setAuthor(res.data))
       .catch(err => {
         console.error("作者載入失敗", err);
         setError('找不到這篇文章的作者');
@@ -47,21 +46,17 @@ export default function ArticlePage() {
   }, [article.userId]);
 
   useEffect(() => {
-    if (!user || !articleId) return;
-    axios.get(`http://localhost:8080/article/bookmark/${user.userId}`, { withCredentials: true })
-      .then(res => {
-        const bookmarkedIds = res.data;
-        setIsBookmarked(bookmarkedIds.includes(articleId));
-      })
+    if (!userId || !articleId) return;
+    axios.get(`http://localhost:8080/article/bookmark/${userId}`, { withCredentials: true })
+      .then(res => setIsBookmarked(res.data.includes(articleId)))
       .catch(err => {
         console.error('取得收藏資訊失敗', err);
         setIsBookmarked(false);
       });
-  }, [user, articleId]);
+  }, [userId, articleId]);
 
   useEffect(() => {
     if (!articleId) return;
-
     axios.get(`http://localhost:8080/feedback/${articleId}/comments`)
       .then(async (res) => {
         const commentsRaw = res.data;
@@ -71,7 +66,7 @@ export default function ArticlePage() {
             try {
               const userRes = await axios.get(`http://localhost:8080/users/${comment.userId}`);
               return { ...comment, username: userRes.data.username };
-            } catch (err) {
+            } catch {
               return { ...comment, username: '未知用戶' };
             }
           }).sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -79,24 +74,19 @@ export default function ArticlePage() {
 
         setComments(commentsWithUsernames);
       })
-      .catch(err => {
-        console.error("留言載入失敗", err);
-      });
+      .catch(err => console.error("留言載入失敗", err));
   }, [articleId, commentMsg]);
 
   useEffect(() => {
-    if (!articleId || !user) return;
+    if (!articleId || !userId) return;
 
-    axios.get(`http://localhost:8080/feedback/${articleId}/reactions`, {
-      withCredentials: true
-    })
+    axios.get(`http://localhost:8080/feedback/${articleId}/reactions`, { withCredentials: true })
       .then(res => {
         const reactions = res.data;
-
         const myReactionsMap = {};
 
         reactions.forEach(r => {
-          if (r.userId === user.userId) {
+          if (r.userId === userId) {
             const key = r.commentId || 'article';
             myReactionsMap[key] = {
               type: r.type,
@@ -109,6 +99,10 @@ export default function ArticlePage() {
           setIsUp(myReactionsMap['article'].type === 'up');
           setIsDown(myReactionsMap['article'].type === 'down');
           setArticleReactionId(myReactionsMap['article'].reactionId);
+        } else {
+          setIsUp(false);
+          setIsDown(false);
+          setArticleReactionId(null);
         }
 
         setComments(prev =>
@@ -116,15 +110,13 @@ export default function ArticlePage() {
             const r = myReactionsMap[c.id];
             return {
               ...c,
-              myReaction: r ? r : null
+              myReaction: r || null
             };
           })
         );
       })
-      .catch(err => {
-        console.error('取得 reaction 資料失敗', err);
-      });
-  }, [articleId, user]);
+      .catch(err => console.error('取得 reaction 資料失敗', err));
+  }, [articleId, userId, reactionRefreshKey]);
 
   const formatDate = (isoString) => new Date(isoString).toLocaleString('zh-TW');
 
@@ -143,13 +135,17 @@ export default function ArticlePage() {
     }
 
     try {
-      await axios.post(`http://localhost:8080/feedback/${user.userId}/${articleId}/${article.userId}/comment-edited`, comment, {
-        headers: { 'Content-Type': 'text/plain' },
-        withCredentials: true
-      });
+      await axios.post(
+        `http://localhost:8080/feedback/${userId}/${articleId}/${article.userId}/comment-edited`,
+        comment,
+        {
+          headers: { 'Content-Type': 'text/plain' },
+          withCredentials: true
+        }
+      );
 
-      setCommentMsg('留言成功！');
       setComment('');
+      setCommentMsg('留言成功！');
     } catch (err) {
       console.error('留言失敗', err);
       setCommentMsg('留言失敗，請稍後再試');
@@ -166,17 +162,13 @@ export default function ArticlePage() {
 
     try {
       if (isBookmarked) {
-        await axios.delete(`http://localhost:8080/article/bookmark/${user.userId}/${articleId}`, {
-          withCredentials: true
-        });
-        setBookmarkMsg('已取消收藏');
+        await axios.delete(`http://localhost:8080/article/bookmark/${userId}/${articleId}`, { withCredentials: true });
         setIsBookmarked(false);
+        setBookmarkMsg('已取消收藏');
       } else {
-        await axios.put(`http://localhost:8080/article/bookmark/${user.userId}/${articleId}`, null, {
-          withCredentials: true
-        });
-        setBookmarkMsg('收藏成功！');
+        await axios.put(`http://localhost:8080/article/bookmark/${userId}/${articleId}`, null, { withCredentials: true });
         setIsBookmarked(true);
+        setBookmarkMsg('收藏成功！');
       }
     } catch (err) {
       console.error('收藏操作失敗', err);
@@ -189,63 +181,30 @@ export default function ArticlePage() {
       alert("請先登入才能反應");
       return;
     }
-  
+
+    if (!cancel && !commentId && articleReactionId) {
+      alert("請先取消原有的文章反應後再更換");
+      return;
+    }
+
     try {
-      if (cancel) {
-        if (!reactionId) {
-          alert('找不到 reactionId，無法取消反應');
-          return;
-        }
-  
+      if (cancel && reactionId) {
         await axios.delete(
-          `http://localhost:8080/feedback/${user.userId}/${articleId}/${reactionId}/delete-reaction`,
+          `http://localhost:8080/feedback/${userId}/${articleId}/${reactionId}/delete-reaction`,
           { withCredentials: true }
         );
-  
-        if (commentId) {
-          setComments(prev =>
-            prev.map(c => {
-              if (c.id === commentId) return { ...c, myReaction: null };
-              return c;
-            })
-          );
-        } else {
-          setIsUp(false);
-          setIsDown(false);
-          setArticleReactionId(null);
-        }
-  
-      } else {
+      } else if (!cancel) {
         const url = commentId
-          ? `http://localhost:8080/feedback/${writerId}/${articleId}/${commentId}/${user.userId}/add-reaction`
-          : `http://localhost:8080/feedback/${writerId}/${articleId}/${user.userId}/add-reaction`;
-  
+          ? `http://localhost:8080/feedback/${writerId}/${articleId}/${commentId}/${userId}/add-reaction`
+          : `http://localhost:8080/feedback/${writerId}/${articleId}/${userId}/add-reaction`;
+
         await axios.post(url, type, {
           headers: { 'Content-Type': 'text/plain' },
           withCredentials: true
         });
-  
-        if (commentId) {
-          setComments(prev =>
-            prev.map(c => {
-              if (c.id === commentId) {
-                return {
-                  ...c,
-                  myReaction: {
-                    type,
-                    reactionId: null
-                  }
-                };
-              }
-              return c;
-            })
-          );
-        } else {
-          setIsUp(type === 'up');
-          setIsDown(type === 'down');
-          setArticleReactionId(null);
-        }
       }
+
+      setReactionRefreshKey(k => k + 1);
     } catch (err) {
       console.error('反應操作失敗', err);
       alert('操作失敗，請稍後再試');
@@ -286,20 +245,18 @@ export default function ArticlePage() {
             {bookmarkMsg && <Alert variant="info" className="mt-2">{bookmarkMsg}</Alert>}
           </div>
 
-          <div className="mt-3">
+          <div className="mt-3 d-flex gap-2">
             <Button
               variant={isUp ? 'success' : 'outline-success'}
               onClick={() => addReaction(article.userId, articleId, null, 'up', isUp, articleReactionId)}
-            >
-              👍
-            </Button>
+              disabled={isDown && !isUp} // prevent clicking when opposite reaction exists
+            >👍</Button>
             <Button
               variant={isDown ? 'danger' : 'outline-danger'}
               onClick={() => addReaction(article.userId, articleId, null, 'down', isDown, articleReactionId)}
-            >
-              👎
-            </Button>
-            </div>
+              disabled={isUp && !isDown} // prevent clicking when opposite reaction exists
+            >👎</Button>
+          </div>
         </Card>
 
         <Card className="mt-4 p-4">
@@ -312,14 +269,15 @@ export default function ArticlePage() {
                   key={idx}
                   comment={cmt}
                   index={idx}
-                  onReaction={(userId, type) => addReaction(userId, articleId, type)}
+                  onReaction={(writerId, type, cancel, reactionId) =>
+                    addReaction(writerId, articleId, cmt.id, type, cancel, reactionId)
+                  }
                 />
               ))
             ) : (
               <p className="text-muted">目前還沒有留言</p>
             )}
           </div>
-
 
           <Form onSubmit={handleCommentSubmit}>
             <Form.Control

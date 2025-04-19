@@ -1,31 +1,47 @@
 import { Card, Button } from 'react-bootstrap';
 
 export default function Comment({ comment, index, onReaction }) {
+  const { username, content, date, myReaction, userId, id: commentId } = comment;
+
+  const isUp = myReaction?.type === 'up';
+  const isDown = myReaction?.type === 'down';
+  const reactionId = myReaction?.reactionId;
+
+  const handleReact = (type) => {
+    const cancel = myReaction?.type === type;
+    onReaction(userId, type, cancel, reactionId);
+  };
+
   return (
     <Card className="mb-2 p-2">
       <div className="d-flex justify-content-between align-items-center">
-        <div className="fw-bold">{comment.username}</div>
+        <div className="fw-bold">{username}</div>
         <div className="text-muted" style={{ fontSize: '0.8rem' }}>B{index + 1}</div>
       </div>
-      <div style={{ whiteSpace: 'pre-wrap' }}>{comment.content}</div>
-      <div className="mt-2">
+
+      <div style={{ whiteSpace: 'pre-wrap' }}>{content}</div>
+
+      <div className="mt-2 d-flex gap-2">
         <Button
-          variant="outline-success"
+          variant={isUp ? 'success' : 'outline-success'}
           size="sm"
-          onClick={() => onReaction(comment.userId, 'up')}
+          onClick={() => handleReact('up')}
+          disabled={isDown && !isUp}
         >
           👍
-        </Button>{' '}
+        </Button>
         <Button
-          variant="outline-danger"
+          variant={isDown ? 'danger' : 'outline-danger'}
           size="sm"
-          onClick={() => onReaction(comment.userId, 'down')}
+          onClick={() => handleReact('down')}
+          disabled={isUp && !isDown}
         >
           👎
         </Button>
       </div>
-      <div className="text-muted" style={{ fontSize: '0.8rem' }}>
-        {new Date(comment.date).toLocaleString('zh-TW')}
+
+      <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>
+        {new Date(date).toLocaleString('zh-TW')}
       </div>
     </Card>
   );
