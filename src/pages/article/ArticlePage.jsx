@@ -23,17 +23,29 @@ export default function ArticlePage() {
   const [isDown, setIsDown] = useState(false);
   const [articleReactionId, setArticleReactionId] = useState(null);
   const [reactionRefreshKey, setReactionRefreshKey] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editTag, setEditTag] = useState('');
+  const [reactionMap, setReactionMap] = useState({});
 
   const userId = user?.userId;
 
   useEffect(() => {
     axios.get(`http://localhost:8080/article/${articleId}`)
-      .then(res => setArticle(res.data))
+      .then(res => {
+        setArticle(res.data);
+        setEditTitle(res.data.title);
+        setEditContent(res.data.content);
+        setEditCategory(res.data.category);
+        setEditTag(res.data.tag);
+      })
       .catch(err => {
         console.error("文章載入失敗", err);
         setError('找不到這篇文章');
       });
-  }, [articleId]);
+  }, [articleId, reactionRefreshKey]);
 
   useEffect(() => {
     if (!article.userId) return;
@@ -105,15 +117,7 @@ export default function ArticlePage() {
           setArticleReactionId(null);
         }
 
-        setComments(prev =>
-          prev.map(c => {
-            const r = myReactionsMap[c.id];
-            return {
-              ...c,
-              myReaction: r || null
-            };
-          })
-        );
+        setReactionMap(myReactionsMap);
       })
       .catch(err => console.error('取得 reaction 資料失敗', err));
   }, [articleId, userId, reactionRefreshKey]);
@@ -149,6 +153,28 @@ export default function ArticlePage() {
     } catch (err) {
       console.error('留言失敗', err);
       setCommentMsg('留言失敗，請稍後再試');
+    }
+  };
+
+  const handleEditSubmit = async () => {
+    try {
+      const payload = {
+        title: editTitle,
+        content: editContent,
+        category: editCategory,
+        tag: editTag,
+      };
+
+      await axios.put(`http://localhost:8080/article/${articleId}`, JSON.stringify(payload), {
+        headers: { 'Content-Type': 'application/json' },
+        withCredentials: true,
+      });
+
+      setIsEditing(false);
+      setReactionRefreshKey((k) => k + 1);
+    } catch (err) {
+      alert('更新文章失敗');
+      console.error(err);
     }
   };
 
@@ -220,16 +246,53 @@ export default function ArticlePage() {
         <Button variant="link" onClick={() => navigate(-1)}>← 返回上一頁</Button>
 
         <Card className="p-4 shadow-sm">
+          {isEditing ? (
+            <Form.Group className="mb-3">
+              <Form.Label>標題</Form.Label>
+              <Form.Control value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+            </Form.Group>
+          ) : (
+            <h3 className="mb-3">{article.title}</h3>
+          )}
           <div className="d-flex justify-content-between mb-2">
             <span className="fw-bold">{author ? author.username : article.userId}</span>
             <span className="text-muted" style={{ fontSize: '0.9rem' }}>
               {formatDate(article.date)}
+              {userId === article.userId && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="ms-2 p-0 align-baseline"
+                  style={{ fontSize: '0.9rem' }}
+                  onClick={() => setIsEditing(true)}
+                  title="編輯文章"
+                >
+                  ✏️
+                </Button>
+              )}
             </span>
           </div>
 
-          <Card.Text style={{ whiteSpace: 'pre-wrap' }}>
-            {article.content}
-          </Card.Text>
+          {isEditing ? (
+            <>
+              <Form.Group className="mb-2">
+                <Form.Label>分類</Form.Label>
+                <Form.Control value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label>標籤</Form.Label>
+                <Form.Control value={editTag} onChange={(e) => setEditTag(e.target.value)} />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label>內容</Form.Label>
+                <Form.Control as="textarea" rows={5} value={editContent} onChange={(e) => setEditContent(e.target.value)} />
+              </Form.Group>
+              <Button variant="primary" onClick={handleEditSubmit}>儲存</Button>{' '}
+              <Button variant="secondary" onClick={() => setIsEditing(false)}>取消</Button>
+            </>
+          ) : (
+            <Card.Text style={{ whiteSpace: 'pre-wrap' }}>{article.content}</Card.Text>
+          )}
 
           <div className="mt-3 d-flex flex-wrap gap-2">
             {article.tag && article.tag.split(',').map((item, idx) => (
@@ -245,16 +308,16 @@ export default function ArticlePage() {
             {bookmarkMsg && <Alert variant="info" className="mt-2">{bookmarkMsg}</Alert>}
           </div>
 
-          <div className="mt-3 d-flex gap-2">
+          <div style={{ position: 'absolute', bottom: '1rem', right: '1rem' }} className="d-flex gap-2">
             <Button
               variant={isUp ? 'success' : 'outline-success'}
               onClick={() => addReaction(article.userId, articleId, null, 'up', isUp, articleReactionId)}
-              disabled={isDown && !isUp} // prevent clicking when opposite reaction exists
+              disabled={isDown && !isUp}
             >👍</Button>
             <Button
               variant={isDown ? 'danger' : 'outline-danger'}
               onClick={() => addReaction(article.userId, articleId, null, 'down', isDown, articleReactionId)}
-              disabled={isUp && !isDown} // prevent clicking when opposite reaction exists
+              disabled={isUp && !isDown}
             >👎</Button>
           </div>
         </Card>
@@ -269,6 +332,7 @@ export default function ArticlePage() {
                   key={idx}
                   comment={cmt}
                   index={idx}
+                  reactionMap={reactionMap}
                   onReaction={(writerId, type, cancel, reactionId) =>
                     addReaction(writerId, articleId, cmt.id, type, cancel, reactionId)
                   }
