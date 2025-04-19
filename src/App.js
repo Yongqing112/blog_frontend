@@ -5,7 +5,7 @@ import Home from './pages/Home';
 import UserPage from './pages/UserPage';
 import PostPage from './pages/PostPage';
 import Register from './pages/Register';
-import ArticlePage from './pages/ArticlePage';
+import ArticlePage from './pages/article/ArticlePage';
 import DevTool from './DevTool';
 import BookmarkPage from './pages/BookmarkPage';
 import Search from './pages/Search';

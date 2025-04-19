@@ -2,8 +2,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Container, Button, Alert, Card, Badge, Form } from 'react-bootstrap';
-import NavbarComponent from '../NavbarComponent';
-import { useAuth } from '../AuthContext';
+import NavbarComponent from '../../NavbarComponent';
+import { useAuth } from '../../AuthContext';
+import Comment from './Comment';
 
 export default function ArticlePage() {
   const { articleId } = useParams();
@@ -18,6 +19,9 @@ export default function ArticlePage() {
   const [commentMsg, setCommentMsg] = useState('');
   const [bookmarkMsg, setBookmarkMsg] = useState('');
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isUp, setIsUp] = useState(false);
+  const [isDown, setIsDown] = useState(false);
+  const [articleReactionId, setArticleReactionId] = useState(null);
 
   useEffect(() => {
     axios.get(`http://localhost:8080/article/${articleId}`)
@@ -80,6 +84,48 @@ export default function ArticlePage() {
       });
   }, [articleId, commentMsg]);
 
+  useEffect(() => {
+    if (!articleId || !user) return;
+
+    axios.get(`http://localhost:8080/feedback/${articleId}/reactions`, {
+      withCredentials: true
+    })
+      .then(res => {
+        const reactions = res.data;
+
+        const myReactionsMap = {};
+
+        reactions.forEach(r => {
+          if (r.userId === user.userId) {
+            const key = r.commentId || 'article';
+            myReactionsMap[key] = {
+              type: r.type,
+              reactionId: r.id
+            };
+          }
+        });
+
+        if (myReactionsMap['article']) {
+          setIsUp(myReactionsMap['article'].type === 'up');
+          setIsDown(myReactionsMap['article'].type === 'down');
+          setArticleReactionId(myReactionsMap['article'].reactionId);
+        }
+
+        setComments(prev =>
+          prev.map(c => {
+            const r = myReactionsMap[c.id];
+            return {
+              ...c,
+              myReaction: r ? r : null
+            };
+          })
+        );
+      })
+      .catch(err => {
+        console.error('取得 reaction 資料失敗', err);
+      });
+  }, [articleId, user]);
+
   const formatDate = (isoString) => new Date(isoString).toLocaleString('zh-TW');
 
   const handleCommentSubmit = async (e) => {
@@ -138,20 +184,71 @@ export default function ArticlePage() {
     }
   };
 
-  const addReaction = async (writerId, targetId, type) => {
+  const addReaction = async (writerId, articleId, commentId = null, type, cancel = false, reactionId = null) => {
     if (!user) {
       alert("請先登入才能反應");
       return;
     }
-
+  
     try {
-      await axios.post(`http://localhost:8080/feedback/${writerId}/${targetId}/${user.userId}/add-reaction`, type, {
-        headers: { 'Content-Type': 'text/plain' },
-        withCredentials: true,
-      });
+      if (cancel) {
+        if (!reactionId) {
+          alert('找不到 reactionId，無法取消反應');
+          return;
+        }
+  
+        await axios.delete(
+          `http://localhost:8080/feedback/${user.userId}/${articleId}/${reactionId}/delete-reaction`,
+          { withCredentials: true }
+        );
+  
+        if (commentId) {
+          setComments(prev =>
+            prev.map(c => {
+              if (c.id === commentId) return { ...c, myReaction: null };
+              return c;
+            })
+          );
+        } else {
+          setIsUp(false);
+          setIsDown(false);
+          setArticleReactionId(null);
+        }
+  
+      } else {
+        const url = commentId
+          ? `http://localhost:8080/feedback/${writerId}/${articleId}/${commentId}/${user.userId}/add-reaction`
+          : `http://localhost:8080/feedback/${writerId}/${articleId}/${user.userId}/add-reaction`;
+  
+        await axios.post(url, type, {
+          headers: { 'Content-Type': 'text/plain' },
+          withCredentials: true
+        });
+  
+        if (commentId) {
+          setComments(prev =>
+            prev.map(c => {
+              if (c.id === commentId) {
+                return {
+                  ...c,
+                  myReaction: {
+                    type,
+                    reactionId: null
+                  }
+                };
+              }
+              return c;
+            })
+          );
+        } else {
+          setIsUp(type === 'up');
+          setIsDown(type === 'down');
+          setArticleReactionId(null);
+        }
+      }
     } catch (err) {
-      console.error('Reaction 送出失敗', err);
-      alert('送出失敗，請稍後再試');
+      console.error('反應操作失敗', err);
+      alert('操作失敗，請稍後再試');
     }
   };
 
@@ -190,9 +287,19 @@ export default function ArticlePage() {
           </div>
 
           <div className="mt-3">
-            <Button variant="outline-success" size="sm" onClick={() => addReaction(article.userId, articleId, 'up')}>👍</Button>{' '}
-            <Button variant="outline-danger" size="sm" onClick={() => addReaction(article.userId, articleId, 'down')}>👎</Button>
-          </div>
+            <Button
+              variant={isUp ? 'success' : 'outline-success'}
+              onClick={() => addReaction(article.userId, articleId, null, 'up', isUp, articleReactionId)}
+            >
+              👍
+            </Button>
+            <Button
+              variant={isDown ? 'danger' : 'outline-danger'}
+              onClick={() => addReaction(article.userId, articleId, null, 'down', isDown, articleReactionId)}
+            >
+              👎
+            </Button>
+            </div>
         </Card>
 
         <Card className="mt-4 p-4">
@@ -201,39 +308,18 @@ export default function ArticlePage() {
           <div className="mt-4">
             {comments.length > 0 ? (
               comments.map((cmt, idx) => (
-                <Card key={idx} className="mb-2 p-2">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div className="fw-bold">{cmt.username}</div>
-                    <div className="text-muted" style={{ fontSize: '0.8rem' }}>
-                      B{idx + 1}
-                    </div>
-                  </div>
-                  <div style={{ whiteSpace: 'pre-wrap' }}>{cmt.content}</div>
-                  <div className="mt-2">
-                    <Button
-                      variant="outline-success"
-                      size="sm"
-                      onClick={() => addReaction(cmt.userId, articleId, 'up')}
-                    >
-                      👍
-                    </Button>{' '}
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      onClick={() => addReaction(cmt.userId, articleId, 'down')}
-                    >
-                      👎
-                    </Button>
-                  </div>
-                  <div className="text-muted" style={{ fontSize: '0.8rem' }}>
-                    {new Date(cmt.date).toLocaleString('zh-TW')}
-                  </div>
-                </Card>
+                <Comment
+                  key={idx}
+                  comment={cmt}
+                  index={idx}
+                  onReaction={(userId, type) => addReaction(userId, articleId, type)}
+                />
               ))
             ) : (
               <p className="text-muted">目前還沒有留言</p>
             )}
           </div>
+
 
           <Form onSubmit={handleCommentSubmit}>
             <Form.Control
