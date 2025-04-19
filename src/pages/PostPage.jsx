@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Container, Form, Button, Alert, Navbar, Nav, Modal } from 'react-bootstrap';
+import { Container, Form, Button, Alert } from 'react-bootstrap';
 import { useAuth } from '../AuthContext';
 import AuthRequiredModal from './AuthRequiredModal';
+import NavbarComponent from '../NavbarComponent';
 
 export default function PostPage() {
   const [title, setTitle] = useState('');
@@ -49,16 +50,7 @@ export default function PostPage() {
 
   return (
     <>
-      <Navbar bg="light" expand="lg" className="px-5 justify-content-between">
-        <Navbar.Brand style={{ fontWeight: 'bold', fontSize: '20px' }} onClick={() => navigate('/')}>
-          Blog
-        </Navbar.Brand>
-        <Nav className="d-flex gap-3">
-          <Button className="no-style-button" onClick={() => navigate('/user')}>
-            Back
-          </Button>
-        </Nav>
-      </Navbar>
+      <NavbarComponent />
 
       <Container className="mt-5">
         <Form onSubmit={handleSubmit}>

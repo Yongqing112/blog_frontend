@@ -23,6 +23,7 @@ export default function NavbarComponent() {
       </Navbar.Brand>
 
       <Nav className="d-flex gap-3 align-items-center">
+      <Button variant="outline-primary" onClick={() => navigate('/search')}>Search</Button>
         <Button variant="outline-primary" onClick={() => navigate('/notification')}>Notification</Button>
         <Button variant="outline-primary" onClick={() => navigate('/post')}>Post</Button>
         <Button variant="outline-primary" onClick={() => navigate('/bookmark')}>Bookmark</Button>

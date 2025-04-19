@@ -38,7 +38,7 @@ export default function BookmarkPage() {
       })
       .catch(err => {
         console.error('取得收藏失敗', err);
-        setMessage('取得收藏資料失敗，請稍後再試');
+        setMessage('尚未收藏任何文章');
       });
   }, [user]);
 

@@ -16,12 +16,8 @@ export default function Register() {
         username,
         password,
       }, { withCredentials: true });
-
-      setMessage('註冊成功，2秒後跳轉登入畫面');
       
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      navigate('/login');
     } catch (err) {
       setMessage(err.response?.data || '註冊失敗');
     }

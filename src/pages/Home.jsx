@@ -61,7 +61,7 @@ export default function Home() {
         <ListGroup className="mt-3">
           {articles.length > 0 ? (
             articles.map(article => (
-              <ListGroup.Item key={article.id} action onClick={() => navigate(`/article/${article.articleId}`)}>
+              <ListGroup.Item key={article.articleId} action onClick={() => navigate(`/article/${article.articleId}`)}>
                 <strong>{article.title}</strong><br />
                 <p className="text-muted">{article.content.split('\n')[0]}</p>
                 <small className="text-muted">
