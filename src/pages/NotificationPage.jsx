@@ -15,6 +15,29 @@ export default function NotificationPage() {
     const [infoMsg, setInfoMsg] = useState('');
     const [showModal, setShowModal] = useState(false);
 
+    const timeAgo = (isoString) => {
+        const now = new Date();
+        const past = new Date(isoString);
+        const seconds = Math.floor((now - past) / 1000);
+
+        const intervals = [
+            { label: '年', seconds: 31536000 },
+            { label: '個月', seconds: 2592000 },
+            { label: '天', seconds: 86400 },
+            { label: '小時', seconds: 3600 },
+            { label: '分鐘', seconds: 60 },
+            { label: '秒', seconds: 1 },
+        ];
+
+        for (const interval of intervals) {
+            const count = Math.floor(seconds / interval.seconds);
+            if (count >= 1) {
+                return `${count} ${interval.label}前`;
+            }
+        }
+
+        return '剛剛';
+    };
 
     useEffect(() => {
         if (!user) {
@@ -24,13 +47,15 @@ export default function NotificationPage() {
 
         axios.get(`http://localhost:8080/notifications/${user.userId}`, { withCredentials: true })
             .then(res => {
-                setNotifications(res.data);
+                const sortedNotifications = res.data.sort((a, b) => new Date(b.date) - new Date(a.date));
+                setNotifications(sortedNotifications);
             })
             .catch(err => {
                 console.error("通知載入失敗", err);
                 setError('無法載入通知，請稍後再試');
             });
     }, [user]);
+
 
     const formatDate = (isoString) => new Date(isoString).toLocaleString('zh-TW');
 
@@ -67,8 +92,8 @@ export default function NotificationPage() {
                             <div className="d-flex justify-content-between">
                                 <div>
                                     <h5 className="mb-1">{noti.title}</h5>
-                                    <p className="mb-1" style={{ whiteSpace: 'pre-wrap' }}>{noti.message}</p>
-                                    <small className="text-muted">{formatDate(noti.date)}</small>
+                                    {/*<p className="mb-1" style={{ whiteSpace: 'pre-wrap' }}>{noti.content}</p>*/}
+                                    <small className="text-muted">{timeAgo(noti.date)}</small>
                                 </div>
                             </div>
                         </Card>
