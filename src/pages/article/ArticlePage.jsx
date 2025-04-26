@@ -81,10 +81,13 @@ export default function ArticlePage() {
             } catch {
               return { ...comment, username: '未知用戶' };
             }
-          }).sort((a, b) => new Date(a.date) - new Date(b.date))
+          })
         );
 
-        setComments(commentsWithUsernames);
+        const sortedComments = commentsWithUsernames.sort(
+          (a, b) => new Date(a.date) - new Date(b.date)
+        );
+        setComments(sortedComments);
       })
       .catch(err => console.error("留言載入失敗", err));
   }, [articleId, commentMsg]);
@@ -140,7 +143,7 @@ export default function ArticlePage() {
 
     try {
       await axios.post(
-        `http://localhost:8080/feedback/${userId}/${articleId}/${article.userId}/comment-edited`,
+        `http://localhost:8080/feedback/${article.userId}/${articleId}/${userId}/comment-edited`,
         comment,
         {
           headers: { 'Content-Type': 'text/plain' },
@@ -199,6 +202,19 @@ export default function ArticlePage() {
     } catch (err) {
       console.error('收藏操作失敗', err);
       setBookmarkMsg('操作失敗，請稍後再試');
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('確定要刪除這則留言嗎？')) return;
+  
+    try {
+      await axios.delete(`http://localhost:8080/feedback/${articleId}/comment/${commentId}`, { withCredentials: true });
+      setCommentMsg('留言刪除成功！');
+      setReactionRefreshKey(k => k + 1);
+    } catch (err) {
+      console.error('刪除留言失敗', err);
+      alert('刪除留言失敗，請稍後再試');
     }
   };
 
@@ -336,6 +352,7 @@ export default function ArticlePage() {
                   onReaction={(writerId, type, cancel, reactionId) =>
                     addReaction(writerId, articleId, cmt.id, type, cancel, reactionId)
                   }
+                  onDelete={(commentId) => handleDeleteComment(commentId)}
                 />
               ))
             ) : (
