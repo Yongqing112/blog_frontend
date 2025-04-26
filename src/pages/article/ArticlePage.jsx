@@ -308,7 +308,7 @@ export default function ArticlePage() {
             {bookmarkMsg && <Alert variant="info" className="mt-2">{bookmarkMsg}</Alert>}
           </div>
 
-          <div style={{ position: 'absolute', bottom: '1rem', right: '1rem' }} className="d-flex gap-2">
+          <div className="d-flex justify-content-end gap-2 mb-5">
             <Button
               variant={isUp ? 'success' : 'outline-success'}
               onClick={() => addReaction(article.userId, articleId, null, 'up', isUp, articleReactionId)}
