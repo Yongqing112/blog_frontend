@@ -216,7 +216,7 @@ export default function ArticlePage() {
     try {
       if (cancel && reactionId) {
         await axios.delete(
-          `http://localhost:8080/feedback/${userId}/${articleId}/${reactionId}/delete-reaction`,
+          `http://localhost:8080/feedback/${articleId}/reaction/${reactionId}`,
           { withCredentials: true }
         );
       } else if (!cancel) {
