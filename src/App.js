@@ -10,6 +10,7 @@ import DevTool from './DevTool';
 import BookmarkPage from './pages/BookmarkPage';
 import Search from './pages/Search';
 import NotificationPage from "./pages/NotificationPage";
+import ChatPage from "./pages/ChatPage"
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ function AppRouter() {
       <Route path="/bookmark" element={<BookmarkPage />} />
       <Route path="/article/:articleId" element={<ArticlePage />} />
       <Route path="/notification" element={<NotificationPage />} />
+      <Route path="/chat" element={<ChatPage />} />
       <Route path="/search" element={<Search />} />
       <Route path="/devtool" element={<DevTool />} />
     </Routes>

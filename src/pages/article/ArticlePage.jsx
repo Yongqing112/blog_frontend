@@ -124,6 +124,13 @@ export default function ArticlePage() {
 
   const formatDate = (isoString) => new Date(isoString).toLocaleString('zh-TW');
 
+  function isUserThePoster() {
+    if (!user) {
+      return false;
+    }
+    return user.userId === article.userId;
+  }
+
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     setCommentMsg('');
@@ -196,6 +203,26 @@ export default function ArticlePage() {
         setIsBookmarked(true);
         setBookmarkMsg('收藏成功！');
       }
+    } catch (err) {
+      console.error('收藏操作失敗', err);
+      setBookmarkMsg('操作失敗，請稍後再試');
+    }
+  };
+
+  const chat = async () => {
+    setBookmarkMsg('');
+
+    if (!user) {
+      setBookmarkMsg('請先登入才能私訊作者');
+      return;
+    }
+
+    try {
+      navigate(`/chat`);
+      await axios.post('http://localhost:8080/chats/chat', {
+        user1Id: user.userId,
+        user2Id: article.userId
+      })
     } catch (err) {
       console.error('收藏操作失敗', err);
       setBookmarkMsg('操作失敗，請稍後再試');
@@ -300,11 +327,15 @@ export default function ArticlePage() {
             ))}
             <Badge bg="info">分類：{article.category}</Badge>
           </div>
-
-          <div className="mt-4">
+          <div className="mt-4 d-flex align-items-center" style={{ gap: '5px' }} >
             <Button variant={isBookmarked ? 'success' : 'outline-warning'} onClick={toggleBookmark}>
               {isBookmarked ? '✅ 已收藏' : '加入收藏'}
             </Button>
+            <span></span>
+            {!isUserThePoster() ? <Button
+                onClick={chat}
+                variant="dark"
+            >私訊作者</Button>:''}
             {bookmarkMsg && <Alert variant="info" className="mt-2">{bookmarkMsg}</Alert>}
           </div>
 
