@@ -5,7 +5,10 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isAdminMode, setIsAdminMode] = useState(() => {
+    const saved = localStorage.getItem('adminMode');
+    return saved === 'true' ? true : false;
+  });
 
   const [loading, setLoading] = useState(true);
 

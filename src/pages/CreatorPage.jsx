@@ -25,7 +25,7 @@ export default function CreatorPage() {
             setCategories(res.data);
         } catch (err) {
             console.error(err);
-            setMessage('	Failed to load categories. Please try again later.');
+            setMessage('Failed to load categories. Please try again later.');
         }
     };
 

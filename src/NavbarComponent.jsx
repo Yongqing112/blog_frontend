@@ -16,6 +16,14 @@ export default function NavbarComponent() {
     }
   };
 
+  const toggleAdminMode = () => {
+    setIsAdminMode((prev) => {
+      const newMode = !prev;
+      localStorage.setItem('adminMode', newMode);
+      return newMode;
+    });
+  };
+
   return (
     <Navbar bg="light" expand="lg" className="px-5 justify-content-between">
       <Navbar.Brand as={Link} to="/" style={{ fontWeight: 'bold', fontSize: '20px' }}>
@@ -25,7 +33,7 @@ export default function NavbarComponent() {
       {user?.username === 'Admin' && (
         <Button
           variant={isAdminMode ? 'dark' : 'outline-dark'}
-          onClick={() => setIsAdminMode(!isAdminMode)}
+          onClick={toggleAdminMode}
         >
           {isAdminMode ? 'Disable Admin Mode' : 'Enable Admin Mode'}
         </Button>
