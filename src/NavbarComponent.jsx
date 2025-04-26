@@ -11,6 +11,8 @@ export default function NavbarComponent() {
     try {
       await axios.post('http://localhost:8080/users/logout', null, { withCredentials: true });
       setUser(null);
+      setIsAdminMode(false);
+      localStorage.removeItem('adminMode');
     } catch (err) {
       alert('登出失敗，請稍後再試');
     }
