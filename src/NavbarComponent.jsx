@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
 export default function NavbarComponent() {
-  const { user, setUser } = useAuth();
+  const { user, setUser, isAdminMode, setIsAdminMode } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -22,8 +22,23 @@ export default function NavbarComponent() {
         Blog
       </Navbar.Brand>
 
+      {user?.username === 'Admin' && (
+        <Button
+          variant={isAdminMode ? 'dark' : 'outline-dark'}
+          onClick={() => setIsAdminMode(!isAdminMode)}
+        >
+          {isAdminMode ? 'Disable Admin Mode' : 'Enable Admin Mode'}
+        </Button>
+      )}
+
+
       <Nav className="d-flex gap-3 align-items-center">
-      <Button variant="outline-primary" onClick={() => navigate('/search')}>Search</Button>
+        {isAdminMode && (
+          <Button variant="outline-warning" onClick={() => navigate('/admin/creator')}>
+            Creator Management
+          </Button>
+        )}
+        <Button variant="outline-primary" onClick={() => navigate('/search')}>Search</Button>
         <Button variant="outline-primary" onClick={() => navigate('/notification')}>Notification</Button>
         <Button variant="outline-primary" onClick={() => navigate('/post')}>Post</Button>
         <Button variant="outline-primary" onClick={() => navigate('/bookmark')}>Bookmark</Button>

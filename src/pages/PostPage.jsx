@@ -11,6 +11,7 @@ export default function PostPage() {
   const [content, setContent] = useState('');
   const [tag, setTag] = useState('');
   const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState([]);
   const [message, setMessage] = useState('');
   const [showModal, setShowModal] = useState(false);
 
@@ -23,9 +24,32 @@ export default function PostPage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get('http://localhost:8080/article/category', { withCredentials: true });
+        setCategories(res.data);
+      } catch (err) {
+        console.error('載入分類失敗', err);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setMessage('');
+
+    if (!title.trim() || !content.trim()) {
+      setMessage('Title and content cannot be empty.');
+      return;
+    }
+
+    if (!category) {
+      setMessage('Please select a category.');
+      return;
+    }
 
     const articleId = new Date().toISOString();
     const date = new Date().toISOString();
@@ -87,19 +111,26 @@ export default function PostPage() {
 
           <Form.Group className="mb-4">
             <Form.Label>Category</Form.Label>
-            <Form.Control
-              type="text"
+            <Form.Select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="Enter category (ex: Java, React)"
-            />
+            >
+              <option value="" disabled hidden style={{ color: '#ced4da' }}>
+                Please select a category
+              </option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </Form.Select>
           </Form.Group>
 
           <Button variant="dark" type="submit">Save</Button>
           {message && <Alert variant="info" className="mt-3 text-center">{message}</Alert>}
         </Form>
       </Container>
-      <AuthRequiredModal show={showModal} message="請先登入才能發表文章，是否前往登入頁？"/>
+      <AuthRequiredModal show={showModal} message="請先登入才能發表文章，是否前往登入頁？" />
     </>
   );
 }

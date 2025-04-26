@@ -10,6 +10,7 @@ import DevTool from './DevTool';
 import BookmarkPage from './pages/BookmarkPage';
 import Search from './pages/Search';
 import NotificationPage from "./pages/NotificationPage";
+import CreatorPage from './pages/CreatorPage';
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ function AppRouter() {
       <Route path="/article/:articleId" element={<ArticlePage />} />
       <Route path="/notification" element={<NotificationPage />} />
       <Route path="/search" element={<Search />} />
+      <Route path="/admin/creator" element={<CreatorPage />} />
       <Route path="/devtool" element={<DevTool />} />
     </Routes>
   );
