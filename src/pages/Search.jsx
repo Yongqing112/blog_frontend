@@ -14,12 +14,16 @@ export default function SearchPage() {
   const handleSearch = async () => {
     try {
       const params = {};
-      if (title) params.title = title;
-      if (category) params.category = category;
-      if (tag) params.tag = tag;
+    if (title.trim()) params.title = title.trim();
+    if (category.trim()) params.category = category.trim();
+    if (tag.trim()) params.tag = tag.trim();
+
+    if (Object.keys(params).length === 0) {
+      alert('請至少輸入一個搜尋條件');
+      return;
+    }
 
       const response = await axios.get('http://localhost:8080/article/condition', { params });
-      console.log(response.data);
       setResults(response.data);
     } catch (error) {
       alert('搜尋失敗');

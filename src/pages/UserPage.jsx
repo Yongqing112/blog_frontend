@@ -155,7 +155,7 @@ export default function UserPage() {
           <Col md={4}>
             <div className="d-flex justify-content-center mb-4">
               <img
-                src="https://randomuser.me/api/portraits/men/10.jpg"
+                src="user_icon.jpg"
                 alt="avatar"
                 style={{ width: '100%', maxWidth: '250px', borderRadius: '10px' }}
               />

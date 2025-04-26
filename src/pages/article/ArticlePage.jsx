@@ -207,7 +207,7 @@ export default function ArticlePage() {
 
   const handleDeleteComment = async (commentId) => {
     if (!window.confirm('確定要刪除這則留言嗎？')) return;
-  
+
     try {
       await axios.delete(`http://localhost:8080/feedback/${articleId}/comment/${commentId}`, { withCredentials: true });
       setCommentMsg('留言刪除成功！');
@@ -262,31 +262,40 @@ export default function ArticlePage() {
         <Button variant="link" onClick={() => navigate(-1)}>← 返回上一頁</Button>
 
         <Card className="p-4 shadow-sm">
-          {isEditing ? (
-            <Form.Group className="mb-3">
-              <Form.Label>標題</Form.Label>
-              <Form.Control value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-            </Form.Group>
-          ) : (
-            <h3 className="mb-3">{article.title}</h3>
-          )}
-          <div className="d-flex justify-content-between mb-2">
-            <span className="fw-bold">{author ? author.username : article.userId}</span>
-            <span className="text-muted" style={{ fontSize: '0.9rem' }}>
-              {formatDate(article.date)}
-              {userId === article.userId && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="ms-2 p-0 align-baseline"
-                  style={{ fontSize: '0.9rem' }}
-                  onClick={() => setIsEditing(true)}
-                  title="編輯文章"
-                >
-                  ✏️
-                </Button>
+          <div className="d-flex align-items-start mb-3">
+            <img
+              src="/user_icon.jpg"
+              alt="作者頭像"
+              style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover', marginRight: '15px' }}
+            />
+            <div className="flex-grow-1">
+              {isEditing ? (
+                <Form.Group className="mb-3">
+                  <Form.Label>標題</Form.Label>
+                  <Form.Control value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                </Form.Group>
+              ) : (
+                <h3 className="mb-3">{article.title}</h3>
               )}
-            </span>
+              <div className="d-flex justify-content-between mb-2">
+                <span className="fw-bold">{author ? author.username : article.userId}</span>
+                <span className="text-muted" style={{ fontSize: '0.9rem' }}>
+                  {formatDate(article.date)}
+                  {userId === article.userId && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="ms-2 p-0 align-baseline"
+                      style={{ fontSize: '0.9rem' }}
+                      onClick={() => setIsEditing(true)}
+                      title="編輯文章"
+                    >
+                      ✏️
+                    </Button>
+                  )}
+                </span>
+              </div>
+            </div>
           </div>
 
           {isEditing ? (
@@ -349,6 +358,7 @@ export default function ArticlePage() {
                   comment={cmt}
                   index={idx}
                   reactionMap={reactionMap}
+                  articleUserId={article.userId}
                   onReaction={(writerId, type, cancel, reactionId) =>
                     addReaction(writerId, articleId, cmt.id, type, cancel, reactionId)
                   }
