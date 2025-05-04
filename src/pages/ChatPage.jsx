@@ -1,10 +1,11 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from "react";
-import NavbarComponent from "../NavbarComponent";
 import { Container, Button, Card, Form } from 'react-bootstrap';
-import AuthRequiredModal from "./AuthRequiredModal";
+import NavbarComponent from "../NavbarComponent";
 import axios from "axios";
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
+import AuthRequiredModal from "./AuthRequiredModal";
 import {useAuth} from "../AuthContext";
 
 export default function ChatAppLayout() {
@@ -13,10 +14,11 @@ export default function ChatAppLayout() {
     const [showModal, setShowModal] = useState(false);
     const [content, setContent] = useState("");
     const [error, setError] = useState(null);
-    const [activeUsername, setActiveUsername] = useState("");
+    const [activeUser, setActiveUser] = useState("");
     const [chats, setChats] = useState([])
     const [users, setUsers] = useState([]);
-
+    const stompClientRef = useRef(null);
+    const messagesEndRef = useRef(null);
 
     function formatDate(timestamp) {
         const date = new Date(timestamp);
@@ -29,38 +31,97 @@ export default function ChatAppLayout() {
         return `${mm}/${dd} ${hh}:${min}`;
     }
 
+    const scrollToBottom = () => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [chats, activeUser]);
+
     useEffect(() => {
         if (!user) {
             setShowModal(true);
             return;
         }
+
+        // 先拿到聊天資料
         axios.get(`http://localhost:8080/chats/user/${user.userId}`, { withCredentials: true })
             .then(res => {
-                setUsers(Object.keys(res.data))
-                console.log(`users: ${users}`)
-                setChats(res.data)
-                console.log(chats)
+                setUsers(Object.keys(res.data));
+                setChats(res.data);
+                if (!stompClientRef.current ||
+                    !stompClientRef.current.connected && !stompClientRef.current.active) {
+
+                    const stompClient = new Client({
+                        webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+                        debug: (str) => {
+                            console.log("Fdsa",str)},
+                        reconnectDelay: 5000,
+                    });
+
+                    stompClient.onConnect = () => {
+                        console.log('Connected!');
+
+                        const chatIds = Object.values(res.data).map(chat => chat.id);
+                        chatIds.forEach((chatId) => {
+                            stompClient.subscribe(`/topic/chat/${chatId}`, (message) => {
+                                const data = JSON.parse(message.body);
+
+                                setChats(prevChats => {
+                                    const updatedChats = { ...prevChats };
+                                    const chat = Object.values(updatedChats).find(chat => chat.id === chatId);
+                                    const userId = chat.user1Id === user.userId ? chat.user2Id : chat.user1Id;
+
+                                    if (!updatedChats[userId]) {
+                                        updatedChats[userId] = { conversations: [] };
+                                    }
+                                    if (updatedChats[userId].conversations.some(conversation => conversation.id === data.id)){
+                                        return updatedChats;
+                                    }
+                                    updatedChats[userId].conversations.push({
+                                        id: data.id,
+                                        userId: data.userId,
+                                        content: data.content,
+                                        date: data.date
+                                    });
+                                    return updatedChats;
+                                });
+                            });
+                        });
+                    };
+
+                    stompClient.activate();
+                    stompClientRef.current = stompClient;
+                }
             })
             .catch(err => {
                 console.error("通知載入失敗", err);
                 setError('無法載入通知，請稍後再試');
             });
+
+        // 清理函式，component 卸載時
+        return () => {
+            if (stompClientRef.current) {
+                stompClientRef.current.deactivate();
+                stompClientRef.current = null;
+            }
+        };
     }, [user]);
 
     const handleSend = () => {
-        if (!content.trim()) return;
-        const chatId = chats[activeUsername].id;
-
+        if (!content.trim() || !activeUser) return;
+        const chatId = chats[activeUser].id;
         axios.post(`http://localhost:8080/chats/${chatId}`, {
-            user: user.userId,
+            userId: user.userId,
             content: content
-        }).then(r => setContent(""));
-
-    };
-
-
-    const handleKeyDown = (e) => {
-        if (e.key === "Enter") handleSend();
+        }).then(r => {
+            setContent("");
+        }).catch(err => {
+            console.error("發送訊息失敗", err);
+        });
     };
 
     return (
@@ -76,12 +137,12 @@ export default function ChatAppLayout() {
                         <Card className="bg-light p-4 shadow-sm position-relative" style={{ height: '100%', overflowY: 'auto' }}>
                             <h3 className="font-bold mb-4">Chat</h3>
                             <ul className="space-y-2">
-                                {users.map((user, idx) => (
+                                {users.map((user) => (
                                     <li
-                                        key={idx}
-                                        onClick={() => setActiveUsername(user)}
+                                        key={user}
+                                        onClick={() => setActiveUser(user)}
                                         className={`cursor-pointer p-2 rounded ${
-                                            activeUsername === user ? "bg-dark text-white" : "hover:bg-gray-200"
+                                            activeUser === user ? "bg-dark text-white" : "hover:bg-gray-200"
                                         }`}
                                     >
                                         {user}
@@ -98,7 +159,12 @@ export default function ChatAppLayout() {
 
                             {/* 訊息列表 */}
                             <div className="d-flex flex-column gap-2">
-                                {(chats[activeUsername]?.conversations || []).map((conversation, idx) => (
+                                {!activeUser ? (
+                                    <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
+                                        請先選擇一位使用者開始聊天
+                                    </div>
+                                ):
+                                (chats[activeUser]?.conversations || []).map((conversation, idx) => (
                                     <div key={idx}>
                                         {/* 根據發送者決定靠左還是右 */}
                                         <div className={`d-flex ${conversation.userId === user.userId ? "justify-content-end" : "justify-content-start"}`}>
@@ -125,8 +191,8 @@ export default function ChatAppLayout() {
                                         </div>
                                     </div>
                                 ))}
+                                <div ref={messagesEndRef} />
                             </div>
-
 
                         </Card>
                         <p style={{ marginTop: '1em' }}></p>
@@ -138,6 +204,7 @@ export default function ChatAppLayout() {
                                             as="textarea"
                                             rows={1}
                                             value={content}
+                                            disabled={!activeUser}
                                             onChange={(e) => setContent(e.target.value)}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -155,6 +222,7 @@ export default function ChatAppLayout() {
                                         <button
                                             type="button"
                                             onClick={handleSend}
+                                            disabled={!activeUser}
                                             style={{
                                                 padding: '0 16px',
                                                 backgroundColor: 'black',
