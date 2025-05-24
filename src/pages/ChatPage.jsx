@@ -76,12 +76,12 @@ export default function ChatAppLayout() {
                                     const userId = chat.user1Id === user.userId ? chat.user2Id : chat.user1Id;
 
                                     if (!updatedChats[userId]) {
-                                        updatedChats[userId] = { conversations: [] };
+                                        updatedChats[userId] = { messages: [] };
                                     }
-                                    if (updatedChats[userId].conversations.some(conversation => conversation.id === data.id)){
+                                    if (updatedChats[userId].messages.some(message => message.id === data.id)){
                                         return updatedChats;
                                     }
-                                    updatedChats[userId].conversations.push({
+                                    updatedChats[userId].messages.push({
                                         id: data.id,
                                         userId: data.userId,
                                         content: data.content,
@@ -164,29 +164,29 @@ export default function ChatAppLayout() {
                                         請先選擇一位使用者開始聊天
                                     </div>
                                 ):
-                                (chats[activeUser]?.conversations || []).map((conversation, idx) => (
+                                (chats[activeUser]?.messages || []).map((message, idx) => (
                                     <div key={idx}>
                                         {/* 根據發送者決定靠左還是右 */}
-                                        <div className={`d-flex ${conversation.userId === user.userId ? "justify-content-end" : "justify-content-start"}`}>
+                                        <div className={`d-flex ${message.userId === user.userId ? "justify-content-end" : "justify-content-start"}`}>
                                             <div
                                                 className="px-3 py-2 rounded-pill shadow-sm"
                                                 style={{
                                                     maxWidth: "75%",
-                                                    backgroundColor: conversation.userId === user.userId ? "black" : "lightgray",
-                                                    color: conversation.userId === user.userId ? "white" : "black",
-                                                    alignSelf: conversation.userId === user.userId ? "flex-end" : "flex-start",
+                                                    backgroundColor: message.userId === user.userId ? "black" : "lightgray",
+                                                    color: message.userId === user.userId ? "white" : "black",
+                                                    alignSelf: message.userId === user.userId ? "flex-end" : "flex-start",
                                                     whiteSpace: "pre-wrap",
                                                     wordBreak: "break-word",
                                                 }}
                                             >
-                                                {conversation.content}
+                                                {message.content}
                                             </div>
                                         </div>
 
                                         {/* 時間放外面，位置同樣根據發送者對齊 */}
-                                        <div className={`d-flex ${conversation.userId === user.userId ? "justify-content-end" : "justify-content-start"}`}>
+                                        <div className={`d-flex ${message.userId === user.userId ? "justify-content-end" : "justify-content-start"}`}>
                                             <div className="text-muted" style={{ fontSize: "0.75rem", margin: "0 8px" }}>
-                                                {formatDate(conversation.date)}
+                                                {formatDate(message.date)}
                                             </div>
                                         </div>
                                     </div>
