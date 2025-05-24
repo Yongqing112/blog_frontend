@@ -50,6 +50,7 @@ export default function NavbarComponent() {
         )}
         <Button variant="outline-primary" onClick={() => navigate('/search')}>Search</Button>
         <Button variant="outline-primary" onClick={() => navigate('/notification')}>Notification</Button>
+        <Button variant="outline-primary" onClick={() => navigate('/chat')}>Chat</Button>
         <Button variant="outline-primary" onClick={() => navigate('/post')}>Post</Button>
         <Button variant="outline-primary" onClick={() => navigate('/bookmark')}>Bookmark</Button>
 

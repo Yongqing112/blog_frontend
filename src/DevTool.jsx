@@ -9,7 +9,7 @@ export default function DevTool() {
   const [variant, setVariant] = useState('info');
   const [loading, setLoading] = useState(false);
 
-  const createTestUserAndPosts = async () => {
+  const createArticles = async () => {
     if (!user) {
       setVariant('danger');
       setMessage('請先登入後再執行');
@@ -46,6 +46,59 @@ export default function DevTool() {
     }
   };
 
+  const createTestUsers = async () => {
+    setLoading(true);
+    setMessage('開始執行...');
+    setVariant('info');
+
+    try {
+      setMessage('開始註冊...');
+
+      fetch('http://localhost:8080/users/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // 等同於 axios 的 withCredentials: true
+        body: JSON.stringify({
+          username: '1',
+          password: '1'
+        })
+      })
+          .then(res => res.json())
+          .then(data => {
+            console.log('註冊成功:')
+          })
+          .catch(err => console.error('註冊失敗:', err));
+
+      fetch('http://localhost:8080/users/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // 等同於 axios 的 withCredentials: true
+        body: JSON.stringify({
+          username: '2',
+          password: '2'
+        })
+      })
+          .then(res => res.json())
+          .then(data => {
+            console.log('註冊成功:')
+          })
+          .catch(err => console.error('註冊失敗:', err));
+
+      setVariant('success');
+      setMessage("建立測試 user 成功");
+    } catch (err) {
+      console.error(err);
+      setVariant('danger');
+      setMessage('執行失敗，請檢查 console log');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Container className="py-5">
       <Card>
@@ -54,7 +107,7 @@ export default function DevTool() {
           <Card.Text>發表 10 篇文章</Card.Text>
           <Button
             variant="primary"
-            onClick={createTestUserAndPosts}
+            onClick={createArticles}
             disabled={loading || !user}
           >
             {loading
@@ -66,6 +119,14 @@ export default function DevTool() {
                 : '請先登入'}
           </Button>
 
+          <p></p>
+          <Card.Text>新增測試 user</Card.Text>
+          <Button
+              variant="primary"
+              onClick={createTestUsers}
+              disabled={loading}
+          >開始執行
+          </Button>
           {message && (
             <Alert className="mt-3 text-center" variant={variant}>
               {message}
