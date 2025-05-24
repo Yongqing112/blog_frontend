@@ -4,16 +4,26 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
 export default function NavbarComponent() {
-  const { user, setUser } = useAuth();
+  const { user, setUser, isAdminMode, setIsAdminMode } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
       await axios.post('http://localhost:8080/users/logout', null, { withCredentials: true });
       setUser(null);
+      setIsAdminMode(false);
+      localStorage.removeItem('adminMode');
     } catch (err) {
       alert('登出失敗，請稍後再試');
     }
+  };
+
+  const toggleAdminMode = () => {
+    setIsAdminMode((prev) => {
+      const newMode = !prev;
+      localStorage.setItem('adminMode', newMode);
+      return newMode;
+    });
   };
 
   return (
@@ -22,8 +32,23 @@ export default function NavbarComponent() {
         Blog
       </Navbar.Brand>
 
+      {user?.username === 'Admin' && (
+        <Button
+          variant={isAdminMode ? 'dark' : 'outline-dark'}
+          onClick={toggleAdminMode}
+        >
+          {isAdminMode ? 'Disable Admin Mode' : 'Enable Admin Mode'}
+        </Button>
+      )}
+
+
       <Nav className="d-flex gap-3 align-items-center">
-      <Button variant="outline-primary" onClick={() => navigate('/search')}>Search</Button>
+        {isAdminMode && (
+          <Button variant="outline-warning" onClick={() => navigate('/admin/creator')}>
+            Creator Management
+          </Button>
+        )}
+        <Button variant="outline-primary" onClick={() => navigate('/search')}>Search</Button>
         <Button variant="outline-primary" onClick={() => navigate('/notification')}>Notification</Button>
         <Button variant="outline-primary" onClick={() => navigate('/chat')}>Chat</Button>
         <Button variant="outline-primary" onClick={() => navigate('/post')}>Post</Button>

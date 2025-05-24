@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import {Container, Button, Alert, Card, Badge, Modal} from 'react-bootstrap';
+import {Container, Button, Alert, Card} from 'react-bootstrap';
 import NavbarComponent from '../NavbarComponent';
 import { useAuth } from '../AuthContext';
 import AuthRequiredModal from './AuthRequiredModal';
@@ -12,7 +12,7 @@ export default function NotificationPage() {
 
     const [notifications, setNotifications] = useState([]);
     const [error, setError] = useState(null);
-    const [infoMsg, setInfoMsg] = useState('');
+    const [infoMsg] = useState('');
     const [showModal, setShowModal] = useState(false);
 
     const timeAgo = (isoString) => {
@@ -55,9 +55,6 @@ export default function NotificationPage() {
                 setError('無法載入通知，請稍後再試');
             });
     }, [user]);
-
-
-    const formatDate = (isoString) => new Date(isoString).toLocaleString('zh-TW');
 
     const handleNotificationClick = (noti) => {
         if (noti.articleId) {

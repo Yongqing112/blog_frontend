@@ -81,10 +81,13 @@ export default function ArticlePage() {
             } catch {
               return { ...comment, username: '未知用戶' };
             }
-          }).sort((a, b) => new Date(a.date) - new Date(b.date))
+          })
         );
 
-        setComments(commentsWithUsernames);
+        const sortedComments = commentsWithUsernames.sort(
+          (a, b) => new Date(a.date) - new Date(b.date)
+        );
+        setComments(sortedComments);
       })
       .catch(err => console.error("留言載入失敗", err));
   }, [articleId, commentMsg]);
@@ -147,7 +150,7 @@ export default function ArticlePage() {
 
     try {
       await axios.post(
-        `http://localhost:8080/feedback/${userId}/${articleId}/${article.userId}/comment-edited`,
+        `http://localhost:8080/feedback/${article.userId}/${articleId}/${userId}/comment-edited`,
         comment,
         {
           headers: { 'Content-Type': 'text/plain' },
@@ -229,6 +232,19 @@ export default function ArticlePage() {
     }
   };
 
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('確定要刪除這則留言嗎？')) return;
+
+    try {
+      await axios.delete(`http://localhost:8080/feedback/${articleId}/comment/${commentId}`, { withCredentials: true });
+      setCommentMsg('留言刪除成功！');
+      setReactionRefreshKey(k => k + 1);
+    } catch (err) {
+      console.error('刪除留言失敗', err);
+      alert('刪除留言失敗，請稍後再試');
+    }
+  };
+
   const addReaction = async (writerId, articleId, commentId = null, type, cancel = false, reactionId = null) => {
     if (!user) {
       alert("請先登入才能反應");
@@ -243,7 +259,7 @@ export default function ArticlePage() {
     try {
       if (cancel && reactionId) {
         await axios.delete(
-          `http://localhost:8080/feedback/${userId}/${articleId}/${reactionId}/delete-reaction`,
+          `http://localhost:8080/feedback/${articleId}/reaction/${reactionId}`,
           { withCredentials: true }
         );
       } else if (!cancel) {
@@ -273,31 +289,40 @@ export default function ArticlePage() {
         <Button variant="link" onClick={() => navigate(-1)}>← 返回上一頁</Button>
 
         <Card className="p-4 shadow-sm">
-          {isEditing ? (
-            <Form.Group className="mb-3">
-              <Form.Label>標題</Form.Label>
-              <Form.Control value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-            </Form.Group>
-          ) : (
-            <h3 className="mb-3">{article.title}</h3>
-          )}
-          <div className="d-flex justify-content-between mb-2">
-            <span className="fw-bold">{author ? author.username : article.userId}</span>
-            <span className="text-muted" style={{ fontSize: '0.9rem' }}>
-              {formatDate(article.date)}
-              {userId === article.userId && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="ms-2 p-0 align-baseline"
-                  style={{ fontSize: '0.9rem' }}
-                  onClick={() => setIsEditing(true)}
-                  title="編輯文章"
-                >
-                  ✏️
-                </Button>
+          <div className="d-flex align-items-start mb-3">
+            <img
+              src="/user_icon.jpg"
+              alt="作者頭像"
+              style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover', marginRight: '15px' }}
+            />
+            <div className="flex-grow-1">
+              {isEditing ? (
+                <Form.Group className="mb-3">
+                  <Form.Label>標題</Form.Label>
+                  <Form.Control value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                </Form.Group>
+              ) : (
+                <h3 className="mb-3">{article.title}</h3>
               )}
-            </span>
+              <div className="d-flex justify-content-between mb-2">
+                <span className="fw-bold">{author ? author.username : article.userId}</span>
+                <span className="text-muted" style={{ fontSize: '0.9rem' }}>
+                  {formatDate(article.date)}
+                  {userId === article.userId && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="ms-2 p-0 align-baseline"
+                      style={{ fontSize: '0.9rem' }}
+                      onClick={() => setIsEditing(true)}
+                      title="編輯文章"
+                    >
+                      ✏️
+                    </Button>
+                  )}
+                </span>
+              </div>
+            </div>
           </div>
 
           {isEditing ? (
@@ -339,7 +364,7 @@ export default function ArticlePage() {
             {bookmarkMsg && <Alert variant="info" className="mt-2">{bookmarkMsg}</Alert>}
           </div>
 
-          <div style={{ position: 'absolute', bottom: '1rem', right: '1rem' }} className="d-flex gap-2">
+          <div className="d-flex justify-content-end gap-2 mb-5">
             <Button
               variant={isUp ? 'success' : 'outline-success'}
               onClick={() => addReaction(article.userId, articleId, null, 'up', isUp, articleReactionId)}
@@ -364,9 +389,11 @@ export default function ArticlePage() {
                   comment={cmt}
                   index={idx}
                   reactionMap={reactionMap}
+                  articleUserId={article.userId}
                   onReaction={(writerId, type, cancel, reactionId) =>
                     addReaction(writerId, articleId, cmt.id, type, cancel, reactionId)
                   }
+                  onDelete={(commentId) => handleDeleteComment(commentId)}
                 />
               ))
             ) : (
