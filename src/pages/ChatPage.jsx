@@ -7,6 +7,7 @@ import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import AuthRequiredModal from "./AuthRequiredModal";
 import {useAuth} from "../AuthContext";
+import qs from 'qs';
 
 export default function ChatAppLayout() {
     const navigate = useNavigate();
@@ -14,7 +15,7 @@ export default function ChatAppLayout() {
     const [showModal, setShowModal] = useState(false);
     const [content, setContent] = useState("");
     const [error, setError] = useState(null);
-    const [activeUser, setActiveUser] = useState("");
+    const [activeUserId, setActiveUserId] = useState("");
     const [chats, setChats] = useState([])
     const [users, setUsers] = useState([]);
     const stompClientRef = useRef(null);
@@ -39,7 +40,7 @@ export default function ChatAppLayout() {
 
     useEffect(() => {
         scrollToBottom();
-    }, [chats, activeUser]);
+    }, [chats, activeUserId]);
 
     useEffect(() => {
         if (!user) {
@@ -47,11 +48,20 @@ export default function ChatAppLayout() {
             return;
         }
 
-        // 先拿到聊天資料
         axios.get(`http://localhost:8080/chats/user/${user.userId}`, { withCredentials: true })
             .then(res => {
-                setUsers(Object.keys(res.data));
                 setChats(res.data);
+                if (Object.keys(res.data).length !== 0) {
+                    axios.get('http://localhost:8080/users', {
+                        params: {
+                            ids: Object.keys(res.data)
+                        },
+                        paramsSerializer: params => qs.stringify(params, { indices: false })
+                    }).then(response => {
+                        setUsers(response.data);
+                    });
+                }
+
                 if (!stompClientRef.current ||
                     !stompClientRef.current.connected && !stompClientRef.current.active) {
 
@@ -102,7 +112,6 @@ export default function ChatAppLayout() {
                 setError('無法載入通知，請稍後再試');
             });
 
-        // 清理函式，component 卸載時
         return () => {
             if (stompClientRef.current) {
                 stompClientRef.current.deactivate();
@@ -112,8 +121,8 @@ export default function ChatAppLayout() {
     }, [user]);
 
     const handleSend = () => {
-        if (!content.trim() || !activeUser) return;
-        const chatId = chats[activeUser].id;
+        if (!content.trim() || !activeUserId) return;
+        const chatId = chats[activeUserId].id;
         axios.post(`http://localhost:8080/chats/${chatId}`, {
             userId: user.userId,
             content: content
@@ -137,17 +146,20 @@ export default function ChatAppLayout() {
                         <Card className="bg-light p-4 shadow-sm position-relative" style={{ height: '100%', overflowY: 'auto' }}>
                             <h3 className="font-bold mb-4">Chat</h3>
                             <ul className="space-y-2">
-                                {users.map((user) => (
-                                    <li
-                                        key={user}
-                                        onClick={() => setActiveUser(user)}
-                                        className={`cursor-pointer p-2 rounded ${
-                                            activeUser === user ? "bg-dark text-white" : "hover:bg-gray-200"
-                                        }`}
-                                    >
-                                        {user}
-                                    </li>
-                                ))}
+                                {Object.entries(users).map(([receiverId, username]) => {
+                                    console.log("receiverId:", receiverId, "username:", username);
+                                    return (
+                                        <li
+                                            key={receiverId}
+                                            onClick={() => setActiveUserId(receiverId)}
+                                            className={`cursor-pointer p-2 rounded ${
+                                                activeUserId === receiverId ? "bg-dark text-white" : "hover:bg-gray-200"
+                                            }`}
+                                        >
+                                            {username}
+                                        </li>
+                                    );
+                                })}
                             </ul>
 
                         </Card>
@@ -159,38 +171,38 @@ export default function ChatAppLayout() {
 
                             {/* 訊息列表 */}
                             <div className="d-flex flex-column gap-2">
-                                {!activeUser ? (
-                                    <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
-                                        請先選擇一位使用者開始聊天
-                                    </div>
-                                ):
-                                (chats[activeUser]?.messages || []).map((message, idx) => (
-                                    <div key={idx}>
-                                        {/* 根據發送者決定靠左還是右 */}
-                                        <div className={`d-flex ${message.userId === user.userId ? "justify-content-end" : "justify-content-start"}`}>
-                                            <div
-                                                className="px-3 py-2 rounded-pill shadow-sm"
-                                                style={{
-                                                    maxWidth: "75%",
-                                                    backgroundColor: message.userId === user.userId ? "black" : "lightgray",
-                                                    color: message.userId === user.userId ? "white" : "black",
-                                                    alignSelf: message.userId === user.userId ? "flex-end" : "flex-start",
-                                                    whiteSpace: "pre-wrap",
-                                                    wordBreak: "break-word",
-                                                }}
-                                            >
-                                                {message.content}
-                                            </div>
+                                {!activeUserId ? (
+                                        <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
+                                            請先選擇一位使用者開始聊天
                                         </div>
+                                    ):
+                                    (chats[activeUserId]?.messages || []).map((message, idx) => (
+                                        <div key={idx}>
+                                            {/* 根據發送者決定靠左還是右 */}
+                                            <div className={`d-flex ${message.userId === user.userId ? "justify-content-end" : "justify-content-start"}`}>
+                                                <div
+                                                    className="px-3 py-2 rounded-pill shadow-sm"
+                                                    style={{
+                                                        maxWidth: "75%",
+                                                        backgroundColor: message.userId === user.userId ? "black" : "lightgray",
+                                                        color: message.userId === user.userId ? "white" : "black",
+                                                        alignSelf: message.userId === user.userId ? "flex-end" : "flex-start",
+                                                        whiteSpace: "pre-wrap",
+                                                        wordBreak: "break-word",
+                                                    }}
+                                                >
+                                                    {message.content}
+                                                </div>
+                                            </div>
 
-                                        {/* 時間放外面，位置同樣根據發送者對齊 */}
-                                        <div className={`d-flex ${message.userId === user.userId ? "justify-content-end" : "justify-content-start"}`}>
-                                            <div className="text-muted" style={{ fontSize: "0.75rem", margin: "0 8px" }}>
-                                                {formatDate(message.date)}
+                                            {/* 時間放外面，位置同樣根據發送者對齊 */}
+                                            <div className={`d-flex ${message.userId === user.userId ? "justify-content-end" : "justify-content-start"}`}>
+                                                <div className="text-muted" style={{ fontSize: "0.75rem", margin: "0 8px" }}>
+                                                    {formatDate(message.date)}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
                                 <div ref={messagesEndRef} />
                             </div>
 
@@ -204,7 +216,7 @@ export default function ChatAppLayout() {
                                             as="textarea"
                                             rows={1}
                                             value={content}
-                                            disabled={!activeUser}
+                                            disabled={!activeUserId}
                                             onChange={(e) => setContent(e.target.value)}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -222,7 +234,7 @@ export default function ChatAppLayout() {
                                         <button
                                             type="button"
                                             onClick={handleSend}
-                                            disabled={!activeUser}
+                                            disabled={!activeUserId}
                                             style={{
                                                 padding: '0 16px',
                                                 backgroundColor: 'black',
