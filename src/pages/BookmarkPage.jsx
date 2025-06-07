@@ -129,6 +129,29 @@ export default function BookmarkPage() {
     setSelectedBookmarkId(newBookmarkId);
   };
 
+  const handleDeleteBookmarkCategory = async () => {
+    if (!user) {
+      setShowModal(true);
+      return;
+    }
+
+    try {
+      await axios.delete(`http://localhost:8080/article/bookmark/${selectedBookmarkId}`, {
+        withCredentials: true,
+      });
+      alert(`成功刪除收藏類別`);
+      setMessage(`已刪除收藏類別`);
+      // 重新獲取收藏類別
+      const res = await axios.get(`http://localhost:8080/article/bookmark/user/${user.userId}`, { withCredentials: true });
+      setBookmarks(res.data);
+      setArticles([]);
+      setSelectedBookmarkId(null);
+    } catch (err) {
+      console.error('刪除收藏類別失敗', err);
+      alert(`刪除收藏類別失敗：${selectedBookmarkId}`);
+    }
+  };
+
   return (
     <>
       <NavbarComponent />
@@ -150,9 +173,16 @@ export default function BookmarkPage() {
               </option>
             ))}
           </Form.Select>
-          <Button variant="primary" onClick={handleCreateBookmarkCategory}>
-            新增收藏類別
-          </Button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {selectedBookmarkId && (
+              <Button variant="outline-danger" onClick={handleDeleteBookmarkCategory}>
+                刪除收藏類別
+              </Button>
+            )}
+            <Button variant="primary" onClick={handleCreateBookmarkCategory}>
+              新增收藏類別
+            </Button>
+          </div>
         </div>
 
         {message && <Alert variant="info">{message}</Alert>}
