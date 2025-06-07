@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Container, Button, Alert, Card, Badge, Form } from 'react-bootstrap';
+import { Container, Button, Alert, Card, Badge, Form, Modal } from 'react-bootstrap';
 import NavbarComponent from '../../NavbarComponent';
 import { useAuth } from '../../AuthContext';
 import Comment from './Comment';
@@ -29,6 +29,9 @@ export default function ArticlePage() {
   const [editCategory, setEditCategory] = useState('');
   const [editTag, setEditTag] = useState('');
   const [reactionMap, setReactionMap] = useState({});
+  const [showBookmarkModal, setShowBookmarkModal] = useState(false);
+  const [bookmarkList, setBookmarkList] = useState([]);
+  const [selectedBookmarkId, setSelectedBookmarkId] = useState('');
 
   const userId = user?.userId;
 
@@ -56,16 +59,6 @@ export default function ArticlePage() {
         setError('找不到這篇文章的作者');
       });
   }, [article.userId]);
-
-  useEffect(() => {
-    if (!userId || !articleId) return;
-    axios.get(`http://localhost:8080/article/bookmark/${userId}`, { withCredentials: true })
-      .then(res => setIsBookmarked(res.data.includes(articleId)))
-      .catch(err => {
-        console.error('取得收藏資訊失敗', err);
-        setIsBookmarked(false);
-      });
-  }, [userId, articleId]);
 
   useEffect(() => {
     if (!articleId) return;
@@ -197,17 +190,35 @@ export default function ArticlePage() {
     }
 
     try {
-      if (isBookmarked) {
-        await axios.delete(`http://localhost:8080/article/bookmark/${userId}/${articleId}`, { withCredentials: true });
-        setIsBookmarked(false);
-        setBookmarkMsg('已取消收藏');
-      } else {
-        await axios.put(`http://localhost:8080/article/bookmark/${userId}/${articleId}`, null, { withCredentials: true });
-        setIsBookmarked(true);
-        setBookmarkMsg('收藏成功！');
+      const res = await axios.get(`http://localhost:8080/article/bookmark/user/${userId}`, { withCredentials: true });
+      setBookmarkList(res.data);
+      if (res.data.length > 0) {
+        setSelectedBookmarkId(res.data[0].bookmarkId);
       }
+      setShowBookmarkModal(true);
     } catch (err) {
-      console.error('收藏操作失敗', err);
+      console.error('取得收藏清單失敗', err);
+      setBookmarkMsg('操作失敗，請稍後再試');
+    }
+  };
+
+  const confirmAddToBookmark = async () => {
+    const exists = bookmarkList.some(
+    bookmark => bookmark.bookmarkId === selectedBookmarkId &&
+                bookmark.articleIds.includes(articleId)
+  );
+
+  if (exists) {
+    setBookmarkMsg('這篇文章已經在該收藏分類中');
+    setShowBookmarkModal(false);
+    return;
+  }
+    try {
+      await axios.put(`http://localhost:8080/article/bookmark/${selectedBookmarkId}/${articleId}`, null, { withCredentials: true });
+      setIsBookmarked(true);
+      setShowBookmarkModal(false);
+    } catch (err) {
+      console.error('加入收藏失敗', err);
       setBookmarkMsg('操作失敗，請稍後再試');
     }
   };
@@ -353,15 +364,41 @@ export default function ArticlePage() {
             <Badge bg="info">分類：{article.category}</Badge>
           </div>
           <div className="mt-4 d-flex align-items-center" style={{ gap: '5px' }} >
-            <Button variant={isBookmarked ? 'success' : 'outline-warning'} onClick={toggleBookmark}>
-              {isBookmarked ? '✅ 已收藏' : '加入收藏'}
-            </Button>
+             <Container className="mt-5">
+        <Button onClick={toggleBookmark} variant={isBookmarked ? 'success' : 'outline-warning'}>
+          加入收藏
+        </Button>
+
+        <Modal show={showBookmarkModal} onHide={() => setShowBookmarkModal(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>選擇收藏分類</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form.Select
+              value={selectedBookmarkId}
+              onChange={(e) => {
+                setSelectedBookmarkId(e.target.value)
+                console.log(selectedBookmarkId)
+              }}
+            >
+              {bookmarkList.map((bookmark) => (
+                <option key={bookmark.bookmarkId} value={bookmark.bookmarkId}>{bookmark.bookmarkName}</option>
+              ))}
+            </Form.Select>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowBookmarkModal(false)}>取消</Button>
+            <Button variant="primary" onClick={confirmAddToBookmark}>加入收藏</Button>
+          </Modal.Footer>
+        </Modal>
+      
             <span></span>
             {!isUserThePoster() ? <Button
                 onClick={chat}
                 variant="dark"
             >私訊作者</Button>:''}
             {bookmarkMsg && <Alert variant="info" className="mt-2">{bookmarkMsg}</Alert>}
+            </Container>
           </div>
 
           <div className="d-flex justify-content-end gap-2 mb-5">
